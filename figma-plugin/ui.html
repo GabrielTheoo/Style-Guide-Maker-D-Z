@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: #fff;
+      padding: 20px;
+      width: 340px;
+    }
+    h2 { font-size: 15px; font-weight: 700; color: #162328; margin-bottom: 4px; }
+    p { font-size: 12px; color: #59595B; margin-bottom: 16px; line-height: 1.5; }
+
+    .drop-zone {
+      border: 2px dashed #d0d5dd;
+      border-radius: 10px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      position: relative;
+      margin-bottom: 14px;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: #2078BA;
+      background: #f0f8ff;
+    }
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .drop-icon { font-size: 28px; margin-bottom: 6px; }
+    .drop-label { font-size: 13px; color: #59595B; pointer-events: none; }
+    .drop-label strong { color: #2078BA; }
+
+    .file-info {
+      background: #e8f4fd;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #1e40af;
+      margin-bottom: 14px;
+      display: none;
+    }
+    .file-info.visible { display: block; }
+
+    .btn-run {
+      width: 100%;
+      background: #2078BA;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .15s;
+    }
+    .btn-run:hover { background: #1a609a; }
+    .btn-run:disabled { background: #b0c4d8; cursor: not-allowed; }
+
+    .progress {
+      margin-top: 14px;
+      display: none;
+    }
+    .progress.visible { display: block; }
+    .progress-bar-wrap {
+      height: 6px;
+      background: #e8f4fd;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+    .progress-bar {
+      height: 100%;
+      background: #2078BA;
+      border-radius: 3px;
+      transition: width .3s;
+    }
+    .progress-text { font-size: 11px; color: #59595B; }
+
+    .error {
+      margin-top: 10px;
+      background: #fee2e2;
+      border: 1px solid #fca5a5;
+      border-radius: 6px;
+      padding: 10px;
+      font-size: 12px;
+      color: #991b1b;
+      display: none;
+    }
+    .error.visible { display: block; }
+
+    .success {
+      margin-top: 10px;
+      background: #d1fae5;
+      border: 1px solid #6ee7b7;
+      border-radius: 6px;
+      padding: 10px;
+      font-size: 12px;
+      color: #065f46;
+      display: none;
+    }
+    .success.visible { display: block; }
+
+    .section-list {
+      background: #f5f6f7;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 14px;
+    }
+    .section-list p { margin: 0 0 6px; font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; }
+    .section-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #59595B;
+      padding: 3px 0;
+    }
+    .section-item .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #d0d5dd;
+      flex-shrink: 0;
+    }
+    .section-item .dot.done { background: #2078BA; }
+  </style>
+</head>
+<body>
+
+  <h2>Style Guide Maker — D&Z</h2>
+  <p>Carregue o JSON exportado pelo Style Maker para criar todos os frames do guia de estilo no Figma.</p>
+
+  <div class="drop-zone" id="drop-zone">
+    <input type="file" accept=".json" id="json-input" onchange="loadJSON(event)">
+    <div class="drop-icon">📄</div>
+    <div class="drop-label"><strong>Clique ou arraste</strong> o arquivo JSON</div>
+  </div>
+
+  <div class="file-info" id="file-info"></div>
+
+  <div class="section-list">
+    <p>Frames que serão criados</p>
+    <div class="section-item"><span class="dot" id="dot-intro"></span>Project Introduction</div>
+    <div class="section-item"><span class="dot" id="dot-fontweight"></span>Font Weight</div>
+    <div class="section-item"><span class="dot" id="dot-fontsizes"></span>Font Sizes</div>
+    <div class="section-item"><span class="dot" id="dot-styles"></span>Styles</div>
+    <div class="section-item"><span class="dot" id="dot-spacing"></span>Spacing</div>
+    <div class="section-item"><span class="dot" id="dot-colors"></span>Colors</div>
+    <div class="section-item"><span class="dot" id="dot-buttons"></span>Buttons</div>
+    <div class="section-item"><span class="dot" id="dot-images"></span>Images</div>
+    <div class="section-item"><span class="dot" id="dot-components"></span>Components</div>
+  </div>
+
+  <button class="btn-run" id="btn-run" onclick="runPlugin()" disabled>Criar Style Guide no Figma</button>
+
+  <div class="progress" id="progress">
+    <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
+    <div class="progress-text" id="progress-text">Aguardando...</div>
+  </div>
+
+  <div class="error" id="error-box"></div>
+  <div class="success" id="success-box"></div>
+
+  <script>
+    let jsonData = null;
+
+    const dropZone = document.getElementById('drop-zone');
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault(); dropZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file && file.name.endsWith('.json')) readFile(file);
+    });
+
+    function loadJSON(e) {
+      const file = e.target.files[0];
+      if (file) readFile(file);
+    }
+
+    function readFile(file) {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        try {
+          jsonData = JSON.parse(ev.target.result);
+          document.getElementById('file-info').textContent = `✓ ${file.name} carregado (v${jsonData.version || '?'})`;
+          document.getElementById('file-info').classList.add('visible');
+          document.getElementById('btn-run').disabled = false;
+          document.getElementById('error-box').classList.remove('visible');
+        } catch(err) {
+          showError('JSON inválido: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function runPlugin() {
+      if (!jsonData) return;
+      document.getElementById('btn-run').disabled = true;
+      document.getElementById('progress').classList.add('visible');
+      document.getElementById('success-box').classList.remove('visible');
+      document.getElementById('error-box').classList.remove('visible');
+      parent.postMessage({ pluginMessage: { type: 'CREATE_STYLE_GUIDE', data: jsonData } }, '*');
+    }
+
+    function showError(msg) {
+      const box = document.getElementById('error-box');
+      box.textContent = '❌ ' + msg;
+      box.classList.add('visible');
+    }
+
+    window.onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      if (!msg) return;
+
+      if (msg.type === 'PROGRESS') {
+        document.getElementById('progress-bar').style.width = msg.percent + '%';
+        document.getElementById('progress-text').textContent = msg.text;
+        if (msg.dotId) document.getElementById('dot-' + msg.dotId)?.classList.add('done');
+      }
+      if (msg.type === 'DONE') {
+        document.getElementById('progress-bar').style.width = '100%';
+        document.getElementById('progress-text').textContent = 'Concluído!';
+        document.getElementById('success-box').textContent = `✅ ${msg.framesCreated} frames criados com sucesso!`;
+        document.getElementById('success-box').classList.add('visible');
+        document.getElementById('btn-run').disabled = false;
+      }
+      if (msg.type === 'ERROR') {
+        showError(msg.message);
+        document.getElementById('btn-run').disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>

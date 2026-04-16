@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Style Maker — D&Z</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue: #2078BA;
+      --blue-dark: #1a609a;
+      --text: #162328;
+      --text-muted: #59595B;
+      --bg: #f5f6f7;
+      --card: #ffffff;
+      --border: #e2e4e8;
+      --radius: 12px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ─────────────────────────────────── */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--blue);
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.18);
+    }
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-logo-mark {
+      width: 36px;
+      height: 36px;
+      background: rgba(255,255,255,.18);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .header-logo-mark svg { width: 20px; height: 20px; }
+    .header-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -.3px;
+    }
+    .header-sub {
+      font-size: 12px;
+      color: rgba(255,255,255,.6);
+      font-weight: 400;
+      margin-left: 2px;
+    }
+    .btn-export {
+      background: #fff;
+      color: var(--blue);
+      border: none;
+      border-radius: 8px;
+      padding: 10px 22px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background .15s, transform .1s;
+      font-family: inherit;
+    }
+    .btn-export:hover { background: #e8f4fd; transform: translateY(-1px); }
+    .btn-export:active { transform: none; }
+
+    /* ── LAYOUT ─────────────────────────────────── */
+    .app-layout {
+      display: flex;
+      min-height: calc(100vh - 64px);
+    }
+
+    /* ── SIDEBAR ─────────────────────────────────── */
+    .sidebar {
+      width: 220px;
+      flex-shrink: 0;
+      background: var(--card);
+      border-right: 1px solid var(--border);
+      position: sticky;
+      top: 64px;
+      height: calc(100vh - 64px);
+      overflow-y: auto;
+      padding: 24px 0;
+    }
+    .sidebar-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 0 20px 8px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-decoration: none;
+      cursor: pointer;
+      border-left: 3px solid transparent;
+      transition: all .15s;
+    }
+    .nav-item:hover { background: #f0f8ff; color: var(--blue); }
+    .nav-item.active { border-left-color: var(--blue); background: #e8f4fd; color: var(--blue); font-weight: 600; }
+    .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+    /* ── MAIN ─────────────────────────────────── */
+    main {
+      flex: 1;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      max-width: 1100px;
+    }
+
+    /* ── SECTION CARD ─────────────────────────────── */
+    .section-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .section-header {
+      background: var(--blue);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .section-header h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .section-header .section-icon {
+      font-size: 18px;
+      opacity: .85;
+    }
+    .section-badge {
+      margin-left: auto;
+      background: rgba(255,255,255,.2);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+    .section-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    .section-body.single { grid-template-columns: 1fr; }
+    .controls-panel {
+      padding: 24px;
+      border-right: 1px solid var(--border);
+    }
+    .preview-panel {
+      padding: 24px;
+      background: #fafbfc;
+    }
+
+    /* ── FORM ELEMENTS ─────────────────────────────── */
+    .field { margin-bottom: 18px; }
+    .field:last-child { margin-bottom: 0; }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+    }
+    input[type="text"], input[type="number"], select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text);
+      background: #fff;
+      transition: border-color .15s, box-shadow .15s;
+      outline: none;
+    }
+    input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(32,120,186,.12);
+    }
+    textarea { resize: vertical; min-height: 72px; }
+
+    .upload-area {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      position: relative;
+    }
+    .upload-area:hover, .upload-area.dragover {
+      border-color: var(--blue);
+      background: #f0f8ff;
+    }
+    .upload-area input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+      border: none;
+      padding: 0;
+    }
+    .upload-icon { font-size: 28px; margin-bottom: 6px; }
+    .upload-area p { font-size: 13px; color: var(--text-muted); pointer-events: none; }
+    .upload-area .upload-filename { font-size: 12px; color: var(--blue); font-weight: 600; margin-top: 4px; }
+    .upload-thumb {
+      width: 100%;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 6px;
+      margin-top: 8px;
+      display: none;
+    }
+
+    /* ── COLOR PICKERS ─────────────────────────────── */
+    .color-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .color-swatch-input {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      overflow: hidden;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .color-swatch-input input[type="color"] {
+      position: absolute;
+      inset: -4px;
+      width: calc(100% + 8px);
+      height: calc(100% + 8px);
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      background: none;
+    }
+    .color-name-input {
+      flex: 1;
+    }
+    .color-name-input input {
+      padding: 8px 10px;
+      font-size: 13px;
+    }
+    .color-hex-display {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: monospace;
+      min-width: 70px;
+      text-align: right;
+    }
+
+    /* ── STYLES ROW ─────────────────────────────────── */
+    .styles-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .styles-row label { margin-bottom: 4px; }
+    .style-input-group input {
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+
+    /* ── PREVIEWS ─────────────────────────────────── */
+    .preview-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    /* Project Intro Preview */
+    .preview-intro {
+      border-radius: 8px;
+      overflow: hidden;
+      aspect-ratio: 16/9;
+      background: #ddd;
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+    }
+    .preview-intro-bg {
+      position: absolute;
+      inset: 0;
+      object-fit: cover;
+      width: 100%;
+      height: 100%;
+    }
+    .preview-intro-overlay {
+      position: relative;
+      z-index: 1;
+      padding: 16px;
+      width: 100%;
+      background: linear-gradient(transparent, rgba(0,0,0,.6));
+    }
+    .preview-intro-logo {
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+      opacity: .9;
+    }
+    .preview-intro-name {
+      font-size: 20px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.1;
+    }
+    .preview-intro-tagline {
+      font-size: 12px;
+      color: rgba(255,255,255,.8);
+      margin-top: 4px;
+    }
+
+    /* Typography Preview */
+    .preview-font-sample {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .font-weight-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .font-weight-row {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+    .fw-label { font-size: 10px; color: var(--text-muted); min-width: 40px; }
+    .fw-sample { font-size: 16px; transition: font-family .2s; }
+
+    /* Colors Preview */
+    .preview-colors-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .preview-color-chip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .preview-color-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,0,0,.08);
+    }
+    .preview-color-name {
+      font-size: 9px;
+      color: var(--text-muted);
+      text-align: center;
+      max-width: 50px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .shade-strip {
+      display: flex;
+      border-radius: 6px;
+      overflow: hidden;
+      height: 24px;
+      margin-top: 6px;
+    }
+    .shade-cell {
+      flex: 1;
+    }
+
+    /* Styles Preview */
+    .preview-styles-row {
+      display: flex;
+      gap: 16px;
+      align-items: flex-end;
+      margin-bottom: 16px;
+    }
+    .preview-radius-box {
+      background: var(--bg);
+      border: 1.5px solid var(--text);
+      transition: border-radius .2s;
+    }
+    .preview-stroke-box {
+      background: transparent;
+      width: 64px;
+      height: 64px;
+    }
+    .preview-shadow-box {
+      background: #fff;
+      width: 64px;
+      height: 64px;
+      border-radius: 10px;
+    }
+    .preview-style-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 6px;
+    }
+
+    /* Buttons Preview */
+    .btn-preview-group { display: flex; flex-direction: column; gap: 10px; }
+    .btn-p {
+      padding: 10px 24px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'Montserrat', sans-serif;
+      cursor: default;
+      border: 1.5px solid transparent;
+      transition: background .2s, color .2s, border-color .2s;
+      display: inline-block;
+      text-align: center;
+    }
+
+    /* Images Preview */
+    .images-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .image-thumb {
+      aspect-ratio: 1;
+      border-radius: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .image-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .image-thumb .no-img {
+      font-size: 22px;
+      color: var(--border);
+    }
+    .images-drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      position: relative;
+      margin-bottom: 12px;
+    }
+    .images-drop-zone:hover, .images-drop-zone.dragover {
+      border-color: var(--blue);
+      background: #f0f8ff;
+    }
+    .images-drop-zone input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+      border: none;
+      padding: 0;
+    }
+    .images-list { display: flex; flex-direction: column; gap: 6px; }
+    .image-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+    }
+    .image-item img {
+      width: 40px;
+      height: 40px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    .image-item-name { flex: 1; font-size: 12px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .image-item-remove {
+      background: none;
+      border: none;
+      color: #c00;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 0 4px;
+      line-height: 1;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 32px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+    .empty-state .empty-icon { font-size: 36px; margin-bottom: 8px; }
+
+    /* ── FONT SELECTOR ─────────────────────────────── */
+    .font-select-wrap { position: relative; }
+    .font-select-wrap select { padding-right: 32px; }
+    .font-status {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* ── SHADOW CONTROLS ─────────────────────────────── */
+    .shadow-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    /* ── SCROLLBAR ─────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #d0d5dd; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #b0b5bc; }
+
+    /* ── STATIC SECTIONS ─────────────────────────────── */
+    .static-note {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 20px;
+      background: #fff8e6;
+      border-top: 1px solid #fde68a;
+      font-size: 13px;
+      color: #92400e;
+    }
+
+    /* ── COMPONENTS EMPTY ─────────────────────────────── */
+    .components-empty {
+      padding: 48px;
+      text-align: center;
+    }
+    .components-empty .icon { font-size: 48px; margin-bottom: 12px; }
+    .components-empty p { color: var(--text-muted); font-size: 14px; }
+
+    /* ── RESPONSIVE ─────────────────────────────────── */
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .section-body { grid-template-columns: 1fr; }
+      .controls-panel { border-right: none; border-bottom: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="header-brand">
+    <div class="header-logo-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+      </svg>
+    </div>
+    <div>
+      <div class="header-title">Style Maker</div>
+      <div class="header-sub">D&amp;Z Design System Generator</div>
+    </div>
+  </div>
+  <button class="btn-export" onclick="exportJSON()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Exportar JSON para Figma
+  </button>
+</header>
+
+<!-- ── APP LAYOUT ── -->
+<div class="app-layout">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-label">Seções</div>
+    <a class="nav-item active" href="#section-intro" onclick="setActive(this)"><span class="nav-icon">🖼️</span> Introdução</a>
+    <a class="nav-item" href="#section-typography" onclick="setActive(this)"><span class="nav-icon">🔤</span> Tipografia</a>
+    <a class="nav-item" href="#section-colors" onclick="setActive(this)"><span class="nav-icon">🎨</span> Cores</a>
+    <a class="nav-item" href="#section-styles" onclick="setActive(this)"><span class="nav-icon">✦</span> Estilos</a>
+    <a class="nav-item" href="#section-buttons" onclick="setActive(this)"><span class="nav-icon">⬛</span> Botões</a>
+    <a class="nav-item" href="#section-images" onclick="setActive(this)"><span class="nav-icon">🏞️</span> Imagens</a>
+    <a class="nav-item" href="#section-spacing" onclick="setActive(this)"><span class="nav-icon">↔️</span> Espaçamento</a>
+    <a class="nav-item" href="#section-icons" onclick="setActive(this)"><span class="nav-icon">⚡</span> Ícones</a>
+    <a class="nav-item" href="#section-components" onclick="setActive(this)"><span class="nav-icon">🧩</span> Componentes</a>
+  </nav>
+
+  <!-- MAIN -->
+  <main>
+
+    <!-- ── SECTION 1: PROJECT INTRODUCTION ── -->
+    <div class="section-card" id="section-intro">
+      <div class="section-header">
+        <span class="section-icon">🖼️</span>
+        <h2>Project Introduction</h2>
+        <span class="section-badge">1920 × 1080</span>
+      </div>
+      <div class="section-body">
+        <div class="controls-panel">
+          <div class="field">
+            <label>Nome do Projeto</label>
+            <input type="text" id="proj-name" placeholder="Ex: Ababa Bolt" oninput="updateIntroPreview()">
+          </div>
+          <div class="field">
+            <label>Tagline</label>
+            <textarea id="proj-tagline" placeholder="Ex: Fasteners You Need. Service You Deserve." oninput="updateIntroPreview()" rows="2"></textarea>
+          </div>
+          <div class="field">
+            <label>Logo</label>
+            <div class="upload-area" id="logo-area">
+              <input type="file" accept="image/*" onchange="handleLogoUpload(event)">
+              <div class="upload-icon">⬆️</div>
+              <p>Clique ou arraste o logo</p>
+              <div class="upload-filename" id="logo-filename"></div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Imagem de Fundo</label>
+            <div class="upload-area" id="bg-area">
+              <input type="file" accept="image/*" onchange="handleBgUpload(event)">
+              <div class="upload-icon">🌄</div>
+              <p>Clique ou arraste uma imagem</p>
+              <div class="upload-filename" id="bg-filename"></div>
+            </div>
+          </div>
+        </div>
+        <div class="preview-panel">
+          <div class="preview-label">Preview</div>
+          <div class="preview-intro" id="intro-preview">
+            <div id="intro-bg-overlay" style="position:absolute;inset:0;background:linear-gradient(135deg,#2078BA 0%,#0B5056 100%);"></div>
+            <div class="preview-intro-overlay">
+              <div class="preview-intro-logo" id="preview-logo-name">Logo</div>
+              <div class="preview-intro-name" id="preview-proj-name">Nome do Projeto</div>
+              <div class="preview-intro-tagline" id="preview-proj-tagline">Tagline do projeto</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION 2: TYPOGRAPHY ── -->
+    <div class="section-card" id="section-typography">
+      <div class="section-header">
+        <span class="section-icon">🔤</span>
+        <h2>Tipografia</h2>
+        <span class="section-badge">Font Weight + Sizes</span>
+      </div>
+      <div class="section-body">
+        <div class="controls-panel">
+          <div class="field">
+            <label>Fonte Principal</label>
+            <div class="font-select-wrap">
+              <select id="font-select" onchange="updateTypographyPreview()">
+                <option value="Montserrat">Montserrat</option>
+                <option value="Inter">Inter</option>
+                <option value="Roboto">Roboto</option>
+                <option value="Open Sans">Open Sans</option>
+                <option value="Lato">Lato</option>
+                <option value="Poppins">Poppins</option>
+                <option value="Raleway">Raleway</option>
+                <option value="Nunito">Nunito</option>
+                <option value="Playfair Display">Playfair Display</option>
+                <option value="Source Sans Pro">Source Sans Pro</option>
+              </select>
+            </div>
+            <div class="font-status" id="font-status">Selecione ou carregue fontes do sistema</div>
+          </div>
+          <div class="field">
+            <label>Ou insira o nome da fonte</label>
+            <input type="text" id="font-manual" placeholder="Ex: Helvetica Neue LT Pro" oninput="updateFontFromManual()">
+          </div>
+          <div class="field">
+            <label>Texto de amostra</label>
+            <input type="text" id="font-sample" value="The quick brown fox jumps over the lazy dog" oninput="updateTypographyPreview()">
+          </div>
+        </div>
+        <div class="preview-panel">
+          <div class="preview-label">Font Weight Preview</div>
+          <div class="preview-font-sample" id="font-preview">
+            <div class="font-weight-grid" id="font-weight-grid"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION 3: COLORS ── -->
+    <div class="section-card" id="section-colors">
+      <div class="section-header">
+        <span class="section-icon">🎨</span>
+        <h2>Cores</h2>
+        <span class="section-badge">7 cores + variações</span>
+      </div>
+      <div class="section-body">
+        <div class="controls-panel">
+          <div id="colors-list"></div>
+        </div>
+        <div class="preview-panel">
+          <div class="preview-label">Cores + Paletas</div>
+          <div class="preview-colors-grid" id="colors-circles"></div>
+          <div style="margin-top:16px;">
+            <div class="preview-label">Variações (10 tons por cor)</div>
+            <div id="shade-strips"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION 4: STYLES ── -->
+    <div class="section-card" id="section-styles">
+      <div class="section-header">
+        <span class="section-icon">✦</span>
+        <h2>Estilos</h2>
+        <span class="section-badge">Border Radius · Stroke · Drop Shadow</span>
+      </div>
+      <div class="section-body">
+        <div class="controls-panel">
+          <div class="field">
+            <label>Border Radius</label>
+            <div class="styles-row">
+              <div class="style-input-group">
+                <label>S (px)</label>
+                <input type="number" id="br-s" value="20" min="0" max="999" oninput="updateStylesPreview()">
+              </div>
+              <div class="style-input-group">
+                <label>M (px)</label>
+                <input type="number" id="br-m" value="32" min="0" max="999" oninput="updateStylesPreview()">
+              </div>
+              <div class="style-input-group">
+                <label>L (px)</label>
+                <input type="number" id="br-l" value="54" min="0" max="999" oninput="updateStylesPreview()">
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Stroke</label>
+            <div class="styles-row">
+              <div class="style-input-group">
+                <label>S (px)</label>
+                <input type="number" id="stroke-s" value="0.5" min="0" step="0.5" oninput="updateStylesPreview()">
+              </div>
+              <div class="style-input-group">
+                <label>M (px)</label>
+                <input type="number" id="stroke-m" value="1" min="0" step="0.5" oninput="updateStylesPreview()">
+              </div>
+              <div class="style-input-group">
+                <label>L (px)</label>
+                <input type="number" id="stroke-l" value="2" min="0" step="0.5" oninput="updateStylesPreview()">
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Drop Shadow</label>
+            <div class="shadow-grid">
+              <div class="style-input-group">
+                <label>Blur (px)</label>
+                <input type="number" id="shadow-blur" value="16" min="0" oninput="updateStylesPreview()">
+              </div>
+              <div class="style-input-group">
+                <label>Y offset (px)</label>
+                <input type="number" id="shadow-y" value="4" oninput="updateStylesPreview()">
+              </div>
+              <div class="style-input-group">
+                <label>Cor</label>
+                <input type="text" id="shadow-color" value="#000000" oninput="updateStylesPreview()">
+              </div>
+              <div class="style-input-group">
+                <label>Opacidade (%)</label>
+                <input type="number" id="shadow-opacity" value="16" min="0" max="100" oninput="updateStylesPreview()">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="preview-panel">
+          <div class="preview-label">Border Radius</div>
+          <div class="preview-styles-row" id="radius-preview"></div>
+          <div class="preview-label" style="margin-top:12px;">Stroke</div>
+          <div class="preview-styles-row" id="stroke-preview"></div>
+          <div class="preview-label" style="margin-top:12px;">Drop Shadow</div>
+          <div id="shadow-preview"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION 5: BUTTONS ── -->
+    <div class="section-card" id="section-buttons">
+      <div class="section-header">
+        <span class="section-icon">⬛</span>
+        <h2>Botões</h2>
+        <span class="section-badge">Auto-gerado pelas cores</span>
+      </div>
+      <div class="section-body single">
+        <div style="padding:24px;">
+          <div class="preview-label">Baseado na 1ª cor da paleta como Primary</div>
+          <div id="buttons-preview" style="display:flex;flex-wrap:wrap;gap:32px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION 6: IMAGES ── -->
+    <div class="section-card" id="section-images">
+      <div class="section-header">
+        <span class="section-icon">🏞️</span>
+        <h2>Imagens</h2>
+        <span class="section-badge">Upload múltiplo</span>
+      </div>
+      <div class="section-body">
+        <div class="controls-panel">
+          <div class="images-drop-zone" id="images-drop-zone">
+            <input type="file" accept="image/*" multiple onchange="handleImagesUpload(event)" id="images-input">
+            <div class="upload-icon">📁</div>
+            <p><strong>Clique ou arraste imagens</strong></p>
+            <p style="font-size:11px;margin-top:4px;">JPG, PNG, GIF, WebP</p>
+          </div>
+          <div class="images-list" id="images-list"></div>
+        </div>
+        <div class="preview-panel">
+          <div class="preview-label">Preview</div>
+          <div class="images-grid" id="images-preview-grid">
+            <div class="image-thumb"><span class="no-img">🖼️</span></div>
+            <div class="image-thumb"><span class="no-img">🖼️</span></div>
+            <div class="image-thumb"><span class="no-img">🖼️</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION 7: SPACING ── -->
+    <div class="section-card" id="section-spacing">
+      <div class="section-header">
+        <span class="section-icon">↔️</span>
+        <h2>Espaçamento</h2>
+        <span class="section-badge">1920 × 1853</span>
+      </div>
+      <div class="static-note">
+        ℹ️ O frame de Espaçamento será exportado <strong>exatamente como está</strong> no guia de estilo original.
+      </div>
+      <div class="section-body single">
+        <div style="padding:24px;">
+          <div class="preview-label">Escala de Espaçamento (padrão do guia)</div>
+          <div style="display:flex;flex-direction:column;gap:8px;" id="spacing-preview"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION 8: ICONS ── -->
+    <div class="section-card" id="section-icons">
+      <div class="section-header">
+        <span class="section-icon">⚡</span>
+        <h2>Iconografia</h2>
+        <span class="section-badge">1920 × 3222</span>
+      </div>
+      <div class="static-note">
+        ℹ️ O frame de Ícones será exportado <strong>exatamente como está</strong> no guia de estilo original.
+      </div>
+      <div class="section-body single">
+        <div style="padding:24px;">
+          <div class="empty-state">
+            <div class="empty-icon">⚡</div>
+            <p>Os ícones serão replicados do frame original do Figma.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION 9: COMPONENTS ── -->
+    <div class="section-card" id="section-components">
+      <div class="section-header">
+        <span class="section-icon">🧩</span>
+        <h2>Componentes</h2>
+        <span class="section-badge">1920 × 2059</span>
+      </div>
+      <div class="components-empty">
+        <div class="icon">🧩</div>
+        <p>Frame de Componentes criado em branco.<br>Será preenchido manualmente no Figma.</p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+const state = {
+  project: { name: '', tagline: '', logo: null, background: null },
+  typography: { font: 'Montserrat', sample: 'The quick brown fox jumps over the lazy dog' },
+  colors: [
+    { name: 'Black',    hex: '#262628' },
+    { name: 'White',    hex: '#FFFFFF' },
+    { name: 'Orange',   hex: '#EC7F1F' },
+    { name: 'Teal',     hex: '#0B5056' },
+    { name: 'Yellow',   hex: '#FACB50' },
+    { name: 'Gray',     hex: '#59595B' },
+    { name: 'Dark Gray',hex: '#3B3B3B' },
+  ],
+  styles: {
+    borderRadius: { S: 20, M: 32, L: 54 },
+    stroke: { S: 0.5, M: 1, L: 2 },
+    dropShadow: { blur: 16, y: 4, x: 0, color: '#000000', opacity: 0.16 }
+  },
+  images: []
+};
+
+// ═══════════════════════════════════════════════
+//  COLOR UTILITIES
+// ═══════════════════════════════════════════════
+function hexToHSL(hex) {
+  hex = hex.replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map(c => c+c).join('');
+  let r = parseInt(hex.slice(0,2),16)/255;
+  let g = parseInt(hex.slice(2,4),16)/255;
+  let b = parseInt(hex.slice(4,6),16)/255;
+  let max = Math.max(r,g,b), min = Math.min(r,g,b);
+  let h, s, l = (max+min)/2;
+  if (max === min) { h = s = 0; }
+  else {
+    let d = max - min;
+    s = l > 0.5 ? d/(2-max-min) : d/(max+min);
+    switch(max) {
+      case r: h = ((g-b)/d + (g<b?6:0))/6; break;
+      case g: h = ((b-r)/d+2)/6; break;
+      case b: h = ((r-g)/d+4)/6; break;
+    }
+  }
+  return [h*360, s*100, l*100];
+}
+
+function hslToHex(h, s, l) {
+  h = ((h%360)+360)%360; s = Math.max(0,Math.min(100,s)); l = Math.max(0,Math.min(100,l));
+  h/=360; s/=100; l/=100;
+  let r,g,b;
+  if (s===0) { r=g=b=l; }
+  else {
+    const hue2rgb = (p,q,t) => {
+      if(t<0) t+=1; if(t>1) t-=1;
+      if(t<1/6) return p+(q-p)*6*t;
+      if(t<1/2) return q;
+      if(t<2/3) return p+(q-p)*(2/3-t)*6;
+      return p;
+    };
+    const q = l<0.5 ? l*(1+s) : l+s-l*s;
+    const p = 2*l-q;
+    r=hue2rgb(p,q,h+1/3); g=hue2rgb(p,q,h); b=hue2rgb(p,q,h-1/3);
+  }
+  return '#'+[r,g,b].map(x=>Math.round(x*255).toString(16).padStart(2,'0')).join('');
+}
+
+function generateShades(hex) {
+  const [h, s, l] = hexToHSL(hex);
+  return {
+    light:        hslToHex(h, Math.max(s*0.25, 5), Math.min(l+50, 96)),
+    lightHover:   hslToHex(h, Math.max(s*0.30, 5), Math.min(l+44, 93)),
+    lightActive:  hslToHex(h, Math.max(s*0.45, 5), Math.min(l+30, 90)),
+    normal:       hex,
+    normalHover:  hslToHex(h, s, Math.max(l-5, 4)),
+    normalActive: hslToHex(h, s, Math.max(l-12, 3)),
+    dark:         hslToHex(h, s, Math.max(l-18, 3)),
+    darkHover:    hslToHex(h, s, Math.max(l-26, 2)),
+    darkActive:   hslToHex(h, s, Math.max(l-34, 2)),
+    darker:       hslToHex(h, s, Math.max(l-42, 1)),
+  };
+}
+
+// ═══════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════
+function setActive(el) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// Intersection observer to highlight active nav
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      document.querySelectorAll('.nav-item').forEach(n => {
+        n.classList.toggle('active', n.getAttribute('href') === '#'+id);
+      });
+    }
+  });
+}, { threshold: 0.3 });
+document.querySelectorAll('.section-card[id]').forEach(s => observer.observe(s));
+
+// ═══════════════════════════════════════════════
+//  PROJECT INTRO
+// ═══════════════════════════════════════════════
+function updateIntroPreview() {
+  state.project.name = document.getElementById('proj-name').value;
+  state.project.tagline = document.getElementById('proj-tagline').value;
+  document.getElementById('preview-proj-name').textContent = state.project.name || 'Nome do Projeto';
+  document.getElementById('preview-proj-tagline').textContent = state.project.tagline || 'Tagline do projeto';
+}
+
+function handleLogoUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  document.getElementById('logo-filename').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    state.project.logo = ev.target.result;
+    document.getElementById('preview-logo-name').innerHTML = `<img src="${ev.target.result}" style="height:18px;object-fit:contain;">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleBgUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  document.getElementById('bg-filename').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    state.project.background = ev.target.result;
+    const overlay = document.getElementById('intro-bg-overlay');
+    overlay.style.background = 'none';
+    overlay.style.backgroundImage = `url(${ev.target.result})`;
+    overlay.style.backgroundSize = 'cover';
+    overlay.style.backgroundPosition = 'center';
+  };
+  reader.readAsDataURL(file);
+}
+
+// ═══════════════════════════════════════════════
+//  TYPOGRAPHY
+// ═══════════════════════════════════════════════
+async function loadSystemFonts() {
+  try {
+    if ('queryLocalFonts' in window) {
+      const fonts = await window.queryLocalFonts();
+      const families = [...new Set(fonts.map(f => f.family))].sort();
+      const sel = document.getElementById('font-select');
+      const existing = new Set([...sel.options].map(o => o.value));
+      families.forEach(f => {
+        if (!existing.has(f)) {
+          const opt = document.createElement('option');
+          opt.value = f; opt.textContent = f;
+          sel.appendChild(opt);
+        }
+      });
+      document.getElementById('font-status').textContent = `${families.length} fontes do sistema carregadas`;
+    }
+  } catch(e) {
+    document.getElementById('font-status').textContent = 'Fontes do sistema não disponíveis (use Chrome/Edge)';
+  }
+}
+
+function updateFontFromManual() {
+  const val = document.getElementById('font-manual').value.trim();
+  if (val) { state.typography.font = val; renderFontWeightGrid(); }
+}
+
+function updateTypographyPreview() {
+  state.typography.font = document.getElementById('font-select').value;
+  state.typography.sample = document.getElementById('font-sample').value;
+  renderFontWeightGrid();
+}
+
+function renderFontWeightGrid() {
+  const font = state.typography.font;
+  const sample = state.typography.sample || 'Aa Bb Cc';
+  const weights = [100,200,300,400,500,600,700,800,900];
+  const labels = ['Thin','Extra Light','Light','Regular','Medium','Semi Bold','Bold','Extra Bold','Black'];
+  const grid = document.getElementById('font-weight-grid');
+  grid.innerHTML = weights.map((w,i) => `
+    <div class="font-weight-row">
+      <span class="fw-label" style="font-size:10px;color:#999;">${w}</span>
+      <span class="fw-sample" style="font-family:'${font}',sans-serif;font-weight:${w};font-size:15px;">${labels[i]}: ${sample.split(' ').slice(0,4).join(' ')}</span>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════
+//  COLORS
+// ═══════════════════════════════════════════════
+function renderColorControls() {
+  const list = document.getElementById('colors-list');
+  list.innerHTML = state.colors.map((c, i) => `
+    <div class="color-row" id="color-row-${i}">
+      <div class="color-swatch-input" style="background:${c.hex};">
+        <input type="color" value="${c.hex}" oninput="updateColor(${i}, 'hex', this.value)">
+      </div>
+      <div class="color-name-input">
+        <input type="text" value="${c.name}" placeholder="Nome da cor" oninput="updateColor(${i}, 'name', this.value)" style="font-size:13px;">
+      </div>
+      <div class="color-hex-display" id="hex-display-${i}">${c.hex}</div>
+    </div>
+  `).join('');
+}
+
+function updateColor(i, key, val) {
+  state.colors[i][key] = val;
+  if (key === 'hex') {
+    document.getElementById(`hex-display-${i}`).textContent = val;
+    const row = document.getElementById(`color-row-${i}`);
+    row.querySelector('.color-swatch-input').style.background = val;
+  }
+  updateColorsPreview();
+  updateButtonsPreview();
+}
+
+function updateColorsPreview() {
+  // Circles
+  const circles = document.getElementById('colors-circles');
+  circles.innerHTML = state.colors.map(c => `
+    <div class="preview-color-chip">
+      <div class="preview-color-circle" style="background:${c.hex};${c.hex.toLowerCase()==='#ffffff'||c.hex.toLowerCase()==='#fff'?'border:1.5px solid #ddd;':''}"></div>
+      <div class="preview-color-name">${c.name}</div>
+    </div>
+  `).join('');
+
+  // Shade strips
+  const strips = document.getElementById('shade-strips');
+  strips.innerHTML = state.colors.map(c => {
+    const sh = generateShades(c.hex);
+    const cells = Object.values(sh).map(hex => `<div class="shade-cell" style="background:${hex};"></div>`).join('');
+    return `
+      <div style="margin-bottom:6px;">
+        <div style="font-size:10px;color:#999;margin-bottom:3px;">${c.name}</div>
+        <div class="shade-strip">${cells}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════
+//  STYLES
+// ═══════════════════════════════════════════════
+function updateStylesPreview() {
+  state.styles.borderRadius.S = +document.getElementById('br-s').value;
+  state.styles.borderRadius.M = +document.getElementById('br-m').value;
+  state.styles.borderRadius.L = +document.getElementById('br-l').value;
+  state.styles.stroke.S = +document.getElementById('stroke-s').value;
+  state.styles.stroke.M = +document.getElementById('stroke-m').value;
+  state.styles.stroke.L = +document.getElementById('stroke-l').value;
+  state.styles.dropShadow.blur = +document.getElementById('shadow-blur').value;
+  state.styles.dropShadow.y = +document.getElementById('shadow-y').value;
+  state.styles.dropShadow.color = document.getElementById('shadow-color').value;
+  state.styles.dropShadow.opacity = +document.getElementById('shadow-opacity').value / 100;
+
+  const brSizes = ['S','M','L'];
+  const rp = document.getElementById('radius-preview');
+  rp.innerHTML = brSizes.map(s => {
+    const r = state.styles.borderRadius[s];
+    return `<div style="text-align:center;">
+      <div style="width:64px;height:64px;border:1.5px solid #162328;border-radius:${r}px;background:#f5f6f7;"></div>
+      <div style="font-size:10px;color:#999;margin-top:5px;">S${s} · ${r}px</div>
+    </div>`;
+  }).join('');
+
+  const strSizes = ['S','M','L'];
+  const sp = document.getElementById('stroke-preview');
+  sp.innerHTML = strSizes.map(s => {
+    const sw = state.styles.stroke[s];
+    return `<div style="text-align:center;">
+      <div style="width:64px;height:64px;border:${sw}px solid #162328;border-radius:10px;"></div>
+      <div style="font-size:10px;color:#999;margin-top:5px;">${sw}px</div>
+    </div>`;
+  }).join('');
+
+  const { blur, y, color, opacity } = state.styles.dropShadow;
+  const hex = color.replace('#','');
+  const r = parseInt(hex.slice(0,2),16), g = parseInt(hex.slice(2,4),16), b2 = parseInt(hex.slice(4,6),16);
+  document.getElementById('shadow-preview').innerHTML = `<div style="display:flex;align-items:center;gap:16px;">
+    <div style="width:80px;height:80px;background:#fff;border-radius:12px;box-shadow:0 ${y}px ${blur}px rgba(${r},${g},${b2},${opacity});"></div>
+    <div style="font-size:12px;color:#666;">Blur: ${blur}px · Y: ${y}px<br>Color: ${color} · Opacity: ${Math.round(opacity*100)}%</div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════
+//  BUTTONS
+// ═══════════════════════════════════════════════
+function updateButtonsPreview() {
+  const primary = state.colors[0]?.hex || '#2078BA';
+  const [h, s, l] = hexToHSL(primary);
+  const darkText = l > 55 ? '#000000' : '#ffffff';
+  const hoverBg = hslToHex(h, s, Math.max(l-10, 5));
+
+  const preview = document.getElementById('buttons-preview');
+  preview.innerHTML = `
+    <div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#999;margin-bottom:10px;">Primary</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="btn-p" style="background:${primary};color:${darkText};border-color:${primary};">This is a Button</div>
+        <div class="btn-p" style="background:#fff;color:${primary};border-color:${primary};">Hover State</div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#999;margin-bottom:10px;">Secondary</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="btn-p" style="background:#fff;color:${primary};border-color:${primary};">This is a Button</div>
+        <div class="btn-p" style="background:${primary};color:${darkText};border-color:${primary};">Hover State</div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#999;margin-bottom:10px;">Link</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'Montserrat',sans-serif;font-size:14px;font-weight:600;color:#000;display:flex;align-items:center;gap:6px;cursor:default;">See More <span style="color:${primary}">→</span></div>
+        <div style="font-family:'Montserrat',sans-serif;font-size:14px;font-weight:600;color:${primary};display:flex;align-items:center;gap:6px;cursor:default;">See More <span>→</span></div>
+      </div>
+    </div>
+    <div style="background:#383838;padding:16px;border-radius:8px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#999;margin-bottom:10px;">Dark Background</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="btn-p" style="background:${primary};color:${darkText};border-color:${primary};">This is a Button</div>
+        <div style="font-family:'Montserrat',sans-serif;font-size:14px;font-weight:600;color:#fff;display:flex;align-items:center;gap:6px;cursor:default;">See More <span style="color:${primary}">→</span></div>
+      </div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════
+//  IMAGES
+// ═══════════════════════════════════════════════
+function handleImagesUpload(e) {
+  const files = [...e.target.files];
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      state.images.push({ name: file.name, data: ev.target.result });
+      renderImages();
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+}
+
+function renderImages() {
+  const list = document.getElementById('images-list');
+  list.innerHTML = state.images.map((img, i) => `
+    <div class="image-item">
+      <img src="${img.data}" alt="">
+      <div class="image-item-name">${img.name}</div>
+      <button class="image-item-remove" onclick="removeImage(${i})">×</button>
+    </div>
+  `).join('');
+
+  const grid = document.getElementById('images-preview-grid');
+  const slots = Math.max(state.images.length, 3);
+  grid.innerHTML = Array.from({length: slots}, (_, i) => {
+    if (state.images[i]) return `<div class="image-thumb"><img src="${state.images[i].data}"></div>`;
+    return `<div class="image-thumb"><span class="no-img">🖼️</span></div>`;
+  }).join('');
+}
+
+function removeImage(i) {
+  state.images.splice(i, 1);
+  renderImages();
+}
+
+// Drag and drop for images
+const dropZone = document.getElementById('images-drop-zone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('dragover');
+  const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => { state.images.push({ name: file.name, data: ev.target.result }); renderImages(); };
+    reader.readAsDataURL(file);
+  });
+});
+
+// ═══════════════════════════════════════════════
+//  SPACING PREVIEW
+// ═══════════════════════════════════════════════
+function renderSpacingPreview() {
+  const spaces = [4,8,12,16,20,24,32,40,48,64,80,96];
+  const container = document.getElementById('spacing-preview');
+  container.innerHTML = spaces.map(s => `
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="font-size:12px;color:#999;min-width:32px;text-align:right;">${s}</div>
+      <div style="height:16px;background:#2078BA;border-radius:2px;opacity:.7;" class="spacing-bar" data-size="${s}"></div>
+      <div style="font-size:11px;color:#aaa;">${s}px</div>
+    </div>
+  `).join('');
+  // Scale bars
+  container.querySelectorAll('.spacing-bar').forEach(bar => {
+    bar.style.width = (parseInt(bar.dataset.size) * 1.5) + 'px';
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  JSON EXPORT
+// ═══════════════════════════════════════════════
+function exportJSON() {
+  const colorsWithShades = state.colors.map(c => ({
+    ...c,
+    shades: generateShades(c.hex)
+  }));
+
+  const output = {
+    version: "1.0",
+    generatedAt: new Date().toISOString(),
+    project: state.project,
+    typography: state.typography,
+    colors: colorsWithShades,
+    styles: state.styles,
+    images: state.images.map(img => img.data),
+    frames: {
+      projectIntroduction: { width: 1920, height: 1080 },
+      fontWeight:          { width: 1920, height: 1323 },
+      fontSizes:           { width: 1920, height: 4644 },
+      styles:              { width: 1920, height: 1996 },
+      iconography:         { width: 1920, height: 3222, static: true },
+      spacing:             { width: 1920, height: 1853, static: true },
+      colors:              { width: 1920, height: 2191 },
+      buttons:             { width: 1920, height: 1626 },
+      images:              { width: 1920, height: 3703 },
+      components:          { width: 1920, height: 2059, empty: true }
+    }
+  };
+
+  const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `style-guide-${(state.project.name || 'project').toLowerCase().replace(/\s+/g,'-')}-${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+function init() {
+  renderColorControls();
+  updateColorsPreview();
+  renderFontWeightGrid();
+  updateStylesPreview();
+  updateButtonsPreview();
+  renderSpacingPreview();
+  loadSystemFonts();
+}
+
+init();
+</script>
+</body>
+</html>
