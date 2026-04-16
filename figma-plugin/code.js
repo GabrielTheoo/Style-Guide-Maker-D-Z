@@ -2,582 +2,528 @@
 //  STYLE GUIDE MAKER — D&Z  |  Figma Plugin
 // ═══════════════════════════════════════════════
 
-figma.showUI(__html__, { width: 360, height: 560, title: 'Style Guide Maker — D&Z' });
+figma.showUI(__html__, { width: 360, height: 580, title: 'Style Guide Maker — D&Z' });
 
-// ── COLORS ──────────────────────────────────────
+// ── UTILITIES ────────────────────────────────────
 function hexToRGB(hex) {
-  hex = hex.replace('#', '');
-  if (hex.length === 3) hex = hex.split('').map(c => c+c).join('');
+  hex = (hex || '#000000').replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
   return {
-    r: parseInt(hex.slice(0,2),16)/255,
-    g: parseInt(hex.slice(2,4),16)/255,
-    b: parseInt(hex.slice(4,6),16)/255
+    r: parseInt(hex.slice(0, 2), 16) / 255,
+    g: parseInt(hex.slice(2, 4), 16) / 255,
+    b: parseInt(hex.slice(4, 6), 16) / 255,
   };
 }
-function rgb(hex) { return hexToRGB(hex); }
-function solidFill(hex) { return [{ type: 'SOLID', color: hexToRGB(hex) }]; }
-function solidFillA(hex, a) { const c = hexToRGB(hex); return [{ type: 'SOLID', color: c, opacity: a }]; }
-function noFill() { return []; }
 
-// ── TEXT HELPERS ─────────────────────────────────
-async function loadFont(family, style) {
-  try { await figma.loadFontAsync({ family, style }); return true; }
-  catch(e) {
-    try { await figma.loadFontAsync({ family: 'Inter', style: 'Regular' }); return false; }
-    catch(e2) { return false; }
+function solidFill(hex) {
+  return [{ type: 'SOLID', color: hexToRGB(hex) }];
+}
+
+function prog(text, percent, dotId) {
+  figma.ui.postMessage({ type: 'PROGRESS', text, percent, dotId: dotId || null });
+}
+
+// ── FONT LOADING ─────────────────────────────────
+// Always preload Inter (guaranteed available in Figma)
+const SAFE_FONT = { family: 'Inter', style: 'Regular' };
+const SAFE_BOLD = { family: 'Inter', style: 'Bold' };
+
+async function preloadFonts() {
+  await figma.loadFontAsync(SAFE_FONT);
+  await figma.loadFontAsync(SAFE_BOLD);
+  await figma.loadFontAsync({ family: 'Inter', style: 'Medium' });
+  await figma.loadFontAsync({ family: 'Inter', style: 'SemiBold' });
+}
+
+async function tryLoadFont(family, style) {
+  try {
+    await figma.loadFontAsync({ family, style });
+    return { family, style };
+  } catch (_) {
+    // fallback to Inter
+    return style.toLowerCase().includes('bold') ? SAFE_BOLD : SAFE_FONT;
   }
 }
 
-async function createText(options) {
+// ── CREATE TEXT ───────────────────────────────────
+async function txt(options) {
   const {
-    content, x, y, fontSize = 16, fontFamily = 'Inter', fontStyle = 'Regular',
-    color = '#000000', width, height, align = 'LEFT', lh = null
+    content, x, y,
+    size = 16, family = 'Inter', style = 'Regular',
+    color = '#000000', w, lh,
   } = options;
-  await loadFont(fontFamily, fontStyle);
-  const t = figma.createText();
-  t.fontName = { family: fontFamily, style: fontStyle };
-  t.fontSize = fontSize;
-  t.fills = solidFill(color);
-  t.textAlignHorizontal = align;
-  if (lh) t.lineHeight = { value: lh, unit: 'PIXELS' };
-  t.characters = content;
-  t.x = x; t.y = y;
-  if (width) { t.textAutoResize = 'HEIGHT'; t.resize(width, height || 40); }
-  return t;
-}
 
-function createRect(x, y, w, h, fillHex, cornerRadius = 0, strokeHex = null, strokeWeight = 1) {
-  const r = figma.createRectangle();
-  r.x = x; r.y = y; r.resize(w, h);
-  r.fills = fillHex ? solidFill(fillHex) : noFill();
-  if (cornerRadius) r.cornerRadius = cornerRadius;
-  if (strokeHex) {
-    r.strokes = solidFill(strokeHex);
-    r.strokeWeight = strokeWeight;
-    r.strokeAlign = 'INSIDE';
+  const fontName = await tryLoadFont(family, style);
+  const node = figma.createText();
+  node.fontName = fontName;
+  node.fontSize = size;
+  node.fills = solidFill(color);
+  if (lh) node.lineHeight = { value: lh, unit: 'PIXELS' };
+  node.characters = content || '';
+  node.x = x;
+  node.y = y;
+  if (w) {
+    node.textAutoResize = 'HEIGHT';
+    node.resize(w, 40);
   }
-  return r;
+  return node;
 }
 
-function progress(text, percent, dotId = null) {
-  figma.ui.postMessage({ type: 'PROGRESS', text, percent, dotId });
+// ── CREATE RECT ───────────────────────────────────
+function rect(x, y, w, h, fillHex, radius = 0, strokeHex, strokeW = 1) {
+  const node = figma.createRectangle();
+  node.x = x; node.y = y;
+  node.resize(w, h);
+  node.fills = fillHex ? solidFill(fillHex) : [];
+  if (radius) node.cornerRadius = radius;
+  if (strokeHex) {
+    node.strokes = solidFill(strokeHex);
+    node.strokeWeight = strokeW;
+    node.strokeAlign = 'INSIDE';
+  }
+  return node;
 }
 
 // ── SHARED HEADER ────────────────────────────────
-async function addFrameHeader(frame, title, primaryHex, projectLogo) {
-  const header = createRect(0, 0, 1920, 140, primaryHex);
-  frame.appendChild(header);
+async function addHeader(frame, title, primaryHex) {
+  const bar = rect(0, 0, 1920, 140, primaryHex);
+  frame.appendChild(bar);
 
-  // Logo / project name text
-  await loadFont('Inter', 'Bold');
-  const logoText = figma.createText();
-  logoText.fontName = { family: 'Inter', style: 'Bold' };
-  logoText.fontSize = 28;
-  logoText.fills = solidFill('#FFFFFF');
-  logoText.characters = 'Style Guide';
-  logoText.x = 80; logoText.y = 48;
-  frame.appendChild(logoText);
+  const logoTxt = await txt({ content: 'Style Guide', x: 80, y: 50, size: 32, style: 'Bold', color: '#FFFFFF' });
+  frame.appendChild(logoTxt);
 
-  // Section title on right
-  const titleNode = await createText({
-    content: title, x: 1920 - 80 - 400, y: 50,
-    fontSize: 36, fontFamily: 'Inter', fontStyle: 'Bold', color: '#FFFFFF',
-    width: 400, align: 'RIGHT'
-  });
-  frame.appendChild(titleNode);
+  const titleTxt = await txt({ content: title, x: 1400, y: 48, size: 40, style: 'Bold', color: '#FFFFFF', w: 440 });
+  frame.appendChild(titleTxt);
 }
 
-// ═══════════════════════════════════════════════
-//  FRAME 1: PROJECT INTRODUCTION
-// ═══════════════════════════════════════════════
-async function createProjectIntroFrame(data) {
+// ── DIVIDER LINE ─────────────────────────────────
+function divider(frame, y) {
+  frame.appendChild(rect(80, y, 1760, 1, '#eeeeee'));
+}
+
+// ════════════════════════════════════════════════
+//  FRAME 1 — PROJECT INTRODUCTION
+// ════════════════════════════════════════════════
+async function buildIntro(data, primary) {
   const frame = figma.createFrame();
   frame.name = 'Project Introduction';
   frame.resize(1920, 1080);
-  frame.fills = solidFill('#FFFFFF');
   frame.clipsContent = true;
 
-  // Background image or gradient
-  if (data.project.background) {
+  // Background
+  let bgLoaded = false;
+  if (data.project && data.project.background) {
     try {
-      const base64 = data.project.background.split(',')[1];
-      const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+      const b64 = data.project.background.replace(/^data:image\/\w+;base64,/, '');
+      const bytes = figma.base64Decode(b64);
       const img = figma.createImage(bytes);
-      const bg = createRect(0, 0, 1920, 1080, null);
+      const bg = rect(0, 0, 1920, 1080, null);
       bg.fills = [{ type: 'IMAGE', scaleMode: 'FILL', imageHash: img.hash }];
       frame.appendChild(bg);
-    } catch(e) {}
-  } else {
-    // Default gradient overlay
-    const primaryHex = data.colors?.[0]?.hex || '#2078BA';
-    const bg = createRect(0, 0, 1920, 1080, primaryHex);
-    frame.appendChild(bg);
+      bgLoaded = true;
+    } catch (_) {}
+  }
+  if (!bgLoaded) {
+    frame.appendChild(rect(0, 0, 1920, 1080, primary));
   }
 
-  // Dark overlay
-  const overlay = createRect(0, 0, 1920, 1080, '#000000');
-  overlay.opacity = 0.4;
+  // Overlay
+  const overlay = rect(0, 0, 1920, 1080, '#000000');
+  overlay.opacity = 0.45;
   frame.appendChild(overlay);
 
   // Logo
-  if (data.project.logo) {
+  if (data.project && data.project.logo) {
     try {
-      const base64 = data.project.logo.split(',')[1];
-      const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+      const b64 = data.project.logo.replace(/^data:image\/\w+;base64,/, '');
+      const bytes = figma.base64Decode(b64);
       const img = figma.createImage(bytes);
-      const logoRect = createRect(80, 60, 320, 80, null);
-      logoRect.fills = [{ type: 'IMAGE', scaleMode: 'FIT', imageHash: img.hash }];
-      frame.appendChild(logoRect);
-    } catch(e) {}
+      const logoR = rect(80, 48, 280, 72, null);
+      logoR.fills = [{ type: 'IMAGE', scaleMode: 'FIT', imageHash: img.hash }];
+      frame.appendChild(logoR);
+    } catch (_) {
+      const logoTxt = await txt({ content: 'Logo', x: 80, y: 60, size: 24, style: 'Bold', color: '#FFFFFF' });
+      frame.appendChild(logoTxt);
+    }
   }
 
-  // Project name
-  const name = await createText({
-    content: data.project.name || 'Project Name',
-    x: 80, y: 700, fontSize: 96, fontFamily: 'Inter', fontStyle: 'Bold',
-    color: '#FFFFFF', width: 1200
-  });
-  frame.appendChild(name);
+  const name = data.project && data.project.name ? data.project.name : 'Project Name';
+  const tagline = data.project && data.project.tagline ? data.project.tagline : '';
 
-  // Tagline
-  const tagline = await createText({
-    content: data.project.tagline || 'Your project tagline here.',
-    x: 80, y: 830, fontSize: 36, fontFamily: 'Inter', fontStyle: 'Regular',
-    color: '#FFFFFF', width: 900, lh: 52
-  });
-  frame.appendChild(tagline);
+  frame.appendChild(await txt({ content: name, x: 80, y: 680, size: 96, style: 'Bold', color: '#FFFFFF', w: 1400 }));
+  if (tagline) {
+    frame.appendChild(await txt({ content: tagline, x: 80, y: 820, size: 36, color: '#FFFFFF', w: 1000, lh: 52 }));
+  }
 
   return frame;
 }
 
-// ═══════════════════════════════════════════════
-//  FRAME 2: FONT WEIGHT
-// ═══════════════════════════════════════════════
-async function createFontWeightFrame(data) {
-  const font = data.typography?.primaryFont || 'Inter';
+// ════════════════════════════════════════════════
+//  FRAME 2 — FONT WEIGHT
+// ════════════════════════════════════════════════
+async function buildFontWeight(data, primary) {
   const frame = figma.createFrame();
   frame.name = 'Font Weight';
   frame.resize(1920, 1323);
   frame.fills = solidFill('#FFFFFF');
   frame.clipsContent = true;
+  await addHeader(frame, 'Font Weight', primary);
 
-  const primaryHex = data.colors?.[0]?.hex || '#2078BA';
-  await addFrameHeader(frame, 'Font Weight', primaryHex, null);
+  const fontFamily = (data.typography && data.typography.primaryFont) || 'Inter';
 
-  // Section title
-  const sectionTitle = await createText({
-    content: 'Font Weight', x: 80, y: 200,
-    fontSize: 40, fontFamily: 'Inter', fontStyle: 'Bold', color: '#000000'
-  });
-  frame.appendChild(sectionTitle);
-
-  // Font family name
-  const familyLabel = await createText({
-    content: font, x: 80, y: 260,
-    fontSize: 24, fontFamily: 'Inter', fontStyle: 'Regular', color: '#59595B'
-  });
-  frame.appendChild(familyLabel);
+  frame.appendChild(await txt({ content: 'Font Weight', x: 80, y: 184, size: 40, style: 'Bold' }));
+  frame.appendChild(await txt({ content: fontFamily, x: 80, y: 242, size: 20, color: '#59595B' }));
 
   const weights = [
-    { w: '100', label: 'Thin' },
-    { w: '200', label: 'Extra Light' },
-    { w: '300', label: 'Light' },
-    { w: '400', label: 'Regular' },
-    { w: '500', label: 'Medium' },
-    { w: '600', label: 'SemiBold' },
-    { w: '700', label: 'Bold' },
-    { w: '800', label: 'ExtraBold' },
-    { w: '900', label: 'Black' },
+    ['Thin', '100'],
+    ['Extra Light', '200'],
+    ['Light', '300'],
+    ['Regular', '400'],
+    ['Medium', '500'],
+    ['Semi Bold', '600'],
+    ['Bold', '700'],
+    ['Extra Bold', '800'],
+    ['Black', '900'],
   ];
-  const styleMap = { '100':'Thin','200':'ExtraLight','300':'Light','400':'Regular','500':'Medium','600':'SemiBold','700':'Bold','800':'ExtraBold','900':'Black' };
+  const styleMap = {
+    '100': 'Thin', '200': 'ExtraLight', '300': 'Light', '400': 'Regular',
+    '500': 'Medium', '600': 'SemiBold', '700': 'Bold', '800': 'ExtraBold', '900': 'Black',
+  };
+  const interStyleMap = {
+    '100': 'Thin', '200': 'ExtraLight', '300': 'Light', '400': 'Regular',
+    '500': 'Medium', '600': 'SemiBold', '700': 'Bold', '800': 'ExtraBold', '900': 'Black',
+  };
 
-  let yPos = 340;
-  for (const { w, label } of weights) {
-    const style = styleMap[w] || 'Regular';
-    const loaded = await loadFont(font, style);
-    const actualFont = loaded ? font : 'Inter';
-    const actualStyle = loaded ? style : 'Regular';
+  let y = 310;
+  for (const [label, w] of weights) {
+    const fontStyle = styleMap[w] || 'Regular';
+    const fontName = await tryLoadFont(fontFamily, fontStyle);
 
-    await loadFont(actualFont, actualStyle);
     const t = figma.createText();
-    t.fontName = { family: actualFont, style: actualStyle };
-    t.fontSize = 48;
+    t.fontName = fontName;
+    t.fontSize = 44;
     t.fills = solidFill('#000000');
-    t.characters = `${label} — Aa Bb Cc 0123`;
-    t.x = 80; t.y = yPos;
+    t.characters = `${label} — Aa Bb Cc 01234`;
+    t.x = 80; t.y = y;
     frame.appendChild(t);
 
-    const wLabel = await createText({
-      content: w, x: 1760, y: yPos + 12,
-      fontSize: 18, fontFamily: 'Inter', fontStyle: 'Regular', color: '#999999'
-    });
-    frame.appendChild(wLabel);
-
-    yPos += 90;
+    frame.appendChild(await txt({ content: w, x: 1800, y: y + 12, size: 16, color: '#aaaaaa' }));
+    y += 96;
   }
 
   return frame;
 }
 
-// ═══════════════════════════════════════════════
-//  FRAME 3: FONT SIZES
-// ═══════════════════════════════════════════════
-async function createFontSizesFrame(data) {
-  const font = data.typography?.primaryFont || 'Inter';
+// ════════════════════════════════════════════════
+//  FRAME 3 — FONT SIZES
+// ════════════════════════════════════════════════
+async function buildFontSizes(data, primary) {
   const frame = figma.createFrame();
   frame.name = 'Font Sizes';
   frame.resize(1920, 4644);
   frame.fills = solidFill('#FFFFFF');
   frame.clipsContent = true;
+  await addHeader(frame, 'Font Sizes', primary);
 
-  const primaryHex = data.colors?.[0]?.hex || '#2078BA';
-  await addFrameHeader(frame, 'Font Sizes', primaryHex, null);
-
-  const sizes = [
-    { label: 'H1', size: 52, weight: 'Bold', lh: 68 },
-    { label: 'H2', size: 44, weight: 'Bold', lh: 56 },
-    { label: 'H3', size: 36, weight: 'Regular', lh: 44 },
-    { label: 'H4', size: 28, weight: 'Bold', lh: 36 },
-    { label: 'H5', size: 22, weight: 'Bold', lh: 28 },
-    { label: 'H6', size: 20, weight: 'Regular', lh: 24 },
-  ];
-  const bodySizes = [
-    { label: 'Body L', size: 20, weight: 'Regular', lh: 32 },
-    { label: 'Body M', size: 18, weight: 'Regular', lh: 28 },
-    { label: 'Body S', size: 16, weight: 'Regular', lh: 24 },
-  ];
-  const buttonSizes = [
-    { label: 'Button', size: 16, weight: 'SemiBold', lh: 20 },
-    { label: 'Label',  size: 16, weight: 'Medium', lh: 24 },
-  ];
-
-  let yPos = 200;
+  const fontFamily = (data.typography && data.typography.primaryFont) || 'Inter';
   const sample = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.';
 
-  // Headers
-  const hdrsTitle = await createText({ content: 'Headers', x: 80, y: yPos, fontSize: 40, fontFamily: 'Inter', fontStyle: 'Bold', color: '#000' });
-  frame.appendChild(hdrsTitle);
-  yPos += 80;
+  const headers = [
+    { label: 'H1', size: 52, style: 'Bold',    lh: 68 },
+    { label: 'H2', size: 44, style: 'Bold',    lh: 56 },
+    { label: 'H3', size: 36, style: 'Regular', lh: 44 },
+    { label: 'H4', size: 28, style: 'Bold',    lh: 36 },
+    { label: 'H5', size: 22, style: 'Bold',    lh: 28 },
+    { label: 'H6', size: 20, style: 'Regular', lh: 24 },
+  ];
+  const body = [
+    { label: 'Body L', size: 20, style: 'Regular', lh: 32 },
+    { label: 'Body M', size: 18, style: 'Regular', lh: 28 },
+    { label: 'Body S', size: 16, style: 'Regular', lh: 24 },
+  ];
+  const btns = [
+    { label: 'Button', size: 16, style: 'SemiBold', lh: 20 },
+    { label: 'Label',  size: 16, style: 'Medium',   lh: 24 },
+  ];
 
-  for (const s of sizes) {
-    await loadFont(font, s.weight);
+  let y = 184;
+
+  frame.appendChild(await txt({ content: 'Headers', x: 80, y, size: 40, style: 'Bold' }));
+  y += 72;
+
+  for (const h of headers) {
+    const fontName = await tryLoadFont(fontFamily, h.style);
     const t = figma.createText();
-    try { t.fontName = { family: font, style: s.weight }; } catch { t.fontName = { family: 'Inter', style: s.weight }; }
-    t.fontSize = s.size;
-    t.lineHeight = { value: s.lh, unit: 'PIXELS' };
-    t.fills = solidFill('#000');
-    t.characters = `${s.label} — ${sample.slice(0,40)}`;
-    t.x = 80; t.y = yPos;
+    t.fontName = fontName;
+    t.fontSize = h.size;
+    t.lineHeight = { value: h.lh, unit: 'PIXELS' };
+    t.fills = solidFill('#000000');
+    t.characters = `${h.label} — ${sample.slice(0, 42)}`;
+    t.x = 80; t.y = y;
     frame.appendChild(t);
-
-    const lab = await createText({ content: `${s.size}px / ${s.weight}`, x: 1700, y: yPos + 4, fontSize: 14, fontFamily: 'Inter', fontStyle: 'Regular', color: '#999' });
-    frame.appendChild(lab);
-
-    const sep = createRect(80, yPos + s.lh + 16, 1760, 1, '#eeeeee');
-    frame.appendChild(sep);
-    yPos += s.lh + 48;
+    frame.appendChild(await txt({ content: `${h.size}px · ${h.style}`, x: 1720, y: y + 4, size: 14, color: '#999999' }));
+    divider(frame, y + h.lh + 16);
+    y += h.lh + 56;
   }
 
-  yPos += 40;
-  const bodyTitle = await createText({ content: 'Body', x: 80, y: yPos, fontSize: 40, fontFamily: 'Inter', fontStyle: 'Bold', color: '#000' });
-  frame.appendChild(bodyTitle);
-  yPos += 80;
+  y += 40;
+  frame.appendChild(await txt({ content: 'Body', x: 80, y, size: 40, style: 'Bold' }));
+  y += 72;
 
-  for (const s of bodySizes) {
-    await loadFont(font, s.weight);
+  for (const b of body) {
+    const fontName = await tryLoadFont(fontFamily, b.style);
     const t = figma.createText();
-    try { t.fontName = { family: font, style: s.weight }; } catch { t.fontName = { family: 'Inter', style: 'Regular' }; }
-    t.fontSize = s.size;
-    t.lineHeight = { value: s.lh, unit: 'PIXELS' };
-    t.fills = solidFill('#000');
-    t.resize(1200, 200);
+    t.fontName = fontName;
+    t.fontSize = b.size;
+    t.lineHeight = { value: b.lh, unit: 'PIXELS' };
+    t.fills = solidFill('#000000');
     t.textAutoResize = 'HEIGHT';
-    t.characters = `${s.label} — ${sample}`;
-    t.x = 80; t.y = yPos;
+    t.resize(1400, 200);
+    t.characters = `${b.label} — ${sample}`;
+    t.x = 80; t.y = y;
     frame.appendChild(t);
-    yPos += s.lh * 3 + 60;
+    frame.appendChild(await txt({ content: `${b.size}px · ${b.style}`, x: 1720, y: y + 4, size: 14, color: '#999999' }));
+    y += b.lh * 3 + 64;
   }
 
-  yPos += 40;
-  const btnTitle = await createText({ content: 'Text for Buttons and Links', x: 80, y: yPos, fontSize: 40, fontFamily: 'Inter', fontStyle: 'Bold', color: '#000' });
-  frame.appendChild(btnTitle);
-  yPos += 80;
+  y += 40;
+  frame.appendChild(await txt({ content: 'Text for Buttons and Links', x: 80, y, size: 40, style: 'Bold' }));
+  y += 72;
 
-  for (const s of buttonSizes) {
-    await loadFont(font, s.weight);
+  for (const b of btns) {
+    const fontName = await tryLoadFont(fontFamily, b.style);
     const t = figma.createText();
-    try { t.fontName = { family: font, style: s.weight }; } catch { t.fontName = { family: 'Inter', style: 'Regular' }; }
-    t.fontSize = s.size;
-    t.lineHeight = { value: s.lh, unit: 'PIXELS' };
-    t.fills = solidFill('#000');
-    t.characters = `${s.label}`;
-    t.x = 80; t.y = yPos;
+    t.fontName = fontName;
+    t.fontSize = b.size;
+    t.lineHeight = { value: b.lh, unit: 'PIXELS' };
+    t.fills = solidFill('#000000');
+    t.characters = b.label;
+    t.x = 80; t.y = y;
     frame.appendChild(t);
-    yPos += 80;
+    y += 80;
   }
 
   return frame;
 }
 
-// ═══════════════════════════════════════════════
-//  FRAME 4: STYLES
-// ═══════════════════════════════════════════════
-async function createStylesFrame(data) {
+// ════════════════════════════════════════════════
+//  FRAME 4 — STYLES
+// ════════════════════════════════════════════════
+async function buildStyles(data, primary) {
   const frame = figma.createFrame();
   frame.name = 'Styles';
   frame.resize(1920, 1996);
   frame.fills = solidFill('#FFFFFF');
   frame.clipsContent = true;
+  await addHeader(frame, 'Styles', primary);
 
-  const primaryHex = data.colors?.[0]?.hex || '#2078BA';
-  await addFrameHeader(frame, 'Styles', primaryHex, null);
-
-  const br = data.styles?.borderRadius || { S: 20, M: 32, L: 54 };
-  const st = data.styles?.stroke || { S: 0.5, M: 1, L: 2 };
-  const ds = data.styles?.dropShadow || { blur: 16, y: 4, color: '#000000', opacity: 0.16 };
+  const br = (data.styles && data.styles.borderRadius) || { S: 20, M: 32, L: 54 };
+  const st = (data.styles && data.styles.stroke) || { S: 0.5, M: 1, L: 2 };
+  const ds = (data.styles && data.styles.dropShadow) || { blur: 16, y: 4, x: 0, color: '#000000', opacity: 0.16 };
 
   // Border Radius
-  const brTitle = await createText({ content: 'Border Radius', x: 80, y: 220, fontSize: 36, fontFamily: 'Inter', fontStyle: 'Bold', color: '#000' });
-  frame.appendChild(brTitle);
-
-  const brSizes = [['S', br.S], ['M', br.M], ['L', br.L]];
-  brSizes.forEach(([label, val], i) => {
-    const r = createRect(80 + i * 260, 300, 200, 200, '#f5f6f7', val, '#000000', 1);
-    frame.appendChild(r);
-    createText({ content: `Border Radius ${label}\n${val}px`, x: 80 + i*260, y: 520, fontSize: 18, fontFamily: 'Inter', fontStyle: 'Regular', color: '#000' }).then(t => frame.appendChild(t));
-  });
+  frame.appendChild(await txt({ content: 'Border Radius', x: 80, y: 200, size: 36, style: 'Bold' }));
+  for (const [i, [key, val]] of Object.entries({ S: br.S, M: br.M, L: br.L }).entries()) {
+    const x = 80 + i * 280;
+    frame.appendChild(rect(x, 280, 200, 200, '#f5f6f7', val, '#000000', 1));
+    frame.appendChild(await txt({ content: `BR ${key}  ${val}px`, x, y: 500, size: 18 }));
+  }
 
   // Stroke
-  const stTitle = await createText({ content: 'Stroke', x: 80, y: 640, fontSize: 36, fontFamily: 'Inter', fontStyle: 'Bold', color: '#000' });
-  frame.appendChild(stTitle);
-
-  const stSizes = [['S', st.S], ['M', st.M], ['L', st.L]];
-  stSizes.forEach(([label, val], i) => {
-    const r = createRect(80 + i*260, 720, 200, 200, null, 15, '#000000', val);
-    frame.appendChild(r);
-    createText({ content: `Stroke ${label}\n${val}px`, x: 80 + i*260, y: 940, fontSize: 18, fontFamily: 'Inter', fontStyle: 'Regular', color: '#000' }).then(t => frame.appendChild(t));
-  });
+  frame.appendChild(await txt({ content: 'Stroke', x: 80, y: 600, size: 36, style: 'Bold' }));
+  for (const [i, [key, val]] of Object.entries({ S: st.S, M: st.M, L: st.L }).entries()) {
+    const x = 80 + i * 280;
+    frame.appendChild(rect(x, 680, 200, 200, null, 12, '#000000', val));
+    frame.appendChild(await txt({ content: `Stroke ${key}  ${val}px`, x, y: 900, size: 18 }));
+  }
 
   // Drop Shadow
-  const dsTitle = await createText({ content: 'Drop Shadow', x: 80, y: 1060, fontSize: 36, fontFamily: 'Inter', fontStyle: 'Bold', color: '#000' });
-  frame.appendChild(dsTitle);
-
-  const shadowBox = createRect(80, 1140, 200, 200, '#FFFFFF', 20);
+  frame.appendChild(await txt({ content: 'Drop Shadow', x: 80, y: 1000, size: 36, style: 'Bold' }));
+  const shadowBox = rect(80, 1080, 200, 200, '#FFFFFF', 16);
+  const c = hexToRGB(ds.color || '#000000');
   shadowBox.effects = [{
     type: 'DROP_SHADOW',
-    color: { ...hexToRGB(ds.color || '#000000'), a: ds.opacity || 0.16 },
+    color: { r: c.r, g: c.g, b: c.b, a: ds.opacity || 0.16 },
     offset: { x: ds.x || 0, y: ds.y || 4 },
     radius: ds.blur || 16,
     visible: true,
-    blendMode: 'NORMAL'
+    blendMode: 'NORMAL',
+    showShadowBehindNode: false,
   }];
   frame.appendChild(shadowBox);
-
-  const dsLabel = await createText({
-    content: `Drop Shadow M\nBlur: ${ds.blur}px  Y: ${ds.y}px\nColor: ${ds.color}  Opacity: ${Math.round((ds.opacity||0.16)*100)}%`,
-    x: 320, y: 1160, fontSize: 18, fontFamily: 'Inter', fontStyle: 'Regular', color: '#000'
-  });
-  frame.appendChild(dsLabel);
+  frame.appendChild(await txt({
+    content: `Blur: ${ds.blur}px  Y: ${ds.y}px\nColor: ${ds.color}  Opacity: ${Math.round((ds.opacity || 0.16) * 100)}%`,
+    x: 320, y: 1110, size: 18,
+  }));
 
   return frame;
 }
 
-// ═══════════════════════════════════════════════
-//  FRAME 5: SPACING (static placeholder)
-// ═══════════════════════════════════════════════
-async function createSpacingFrame(data) {
+// ════════════════════════════════════════════════
+//  FRAME 5 — SPACING
+// ════════════════════════════════════════════════
+async function buildSpacing(data, primary) {
   const frame = figma.createFrame();
   frame.name = 'Spacing';
   frame.resize(1920, 1853);
   frame.fills = solidFill('#FFFFFF');
   frame.clipsContent = true;
+  await addHeader(frame, 'Spacing', primary);
 
-  const primaryHex = data.colors?.[0]?.hex || '#2078BA';
-  await addFrameHeader(frame, 'Spacing', primaryHex, null);
-
-  const spacings = [4,8,12,16,20,24,32,40,48,64,80,96,120,160];
-  let y = 220;
-
+  const spacings = [4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80, 96, 120, 160];
+  let y = 200;
   for (const s of spacings) {
-    // Label
-    const label = await createText({ content: `${s}px`, x: 80, y: y + 8, fontSize: 16, fontFamily: 'Inter', fontStyle: 'Regular', color: '#999' });
-    frame.appendChild(label);
-    // Bar
-    const bar = createRect(160, y, s * 4, 32, primaryHex, 4);
-    bar.opacity = 0.7;
+    frame.appendChild(await txt({ content: `${s}`, x: 80, y: y + 8, size: 14, color: '#999999' }));
+    const bar = rect(140, y, s * 5, 32, primary, 4);
+    bar.opacity = 0.75;
     frame.appendChild(bar);
+    frame.appendChild(await txt({ content: `${s}px`, x: 160 + s * 5, y: y + 8, size: 14, color: '#666666' }));
     y += 72;
   }
 
   return frame;
 }
 
-// ═══════════════════════════════════════════════
-//  FRAME 6: COLORS
-// ═══════════════════════════════════════════════
-async function createColorsFrame(data) {
+// ════════════════════════════════════════════════
+//  FRAME 6 — COLORS
+// ════════════════════════════════════════════════
+async function buildColors(data, primary) {
   const frame = figma.createFrame();
   frame.name = 'Colors';
   frame.resize(1920, 2191);
   frame.fills = solidFill('#FFFFFF');
   frame.clipsContent = true;
+  await addHeader(frame, 'Colors', primary);
 
-  const primaryHex = data.colors?.[0]?.hex || '#2078BA';
-  await addFrameHeader(frame, 'Colors', primaryHex, null);
-
-  // Baseline colors title
-  const baseTitle = await createText({ content: 'Baseline Colors', x: 80, y: 200, fontSize: 36, fontFamily: 'Inter', fontStyle: 'Bold', color: '#000' });
-  frame.appendChild(baseTitle);
-
-  // Color circles - 7 colors in a row
   const colors = data.colors || [];
-  colors.slice(0, 7).forEach((c, i) => {
-    const colX = 80 + i * 240;
-    const ellipse = figma.createEllipse();
-    ellipse.resize(131, 131);
-    ellipse.x = colX; ellipse.y = 270;
-    ellipse.fills = solidFill(c.hex);
-    if (c.hex.toLowerCase() === '#ffffff' || c.hex === '#fff') {
-      ellipse.strokes = solidFill('#dddddd');
-      ellipse.strokeWeight = 1;
-    }
-    frame.appendChild(ellipse);
 
-    createText({ content: c.name, x: colX, y: 415, fontSize: 16, fontFamily: 'Inter', fontStyle: 'Bold', color: '#000' }).then(t => frame.appendChild(t));
-    createText({ content: c.hex.toUpperCase(), x: colX, y: 438, fontSize: 14, fontFamily: 'Inter', fontStyle: 'Regular', color: '#59595B' }).then(t => frame.appendChild(t));
+  // Title
+  frame.appendChild(await txt({ content: 'Baseline Colors', x: 80, y: 184, size: 36, style: 'Bold' }));
+
+  // Circles
+  colors.slice(0, 7).forEach((c, i) => {
+    const cx = 80 + i * 240;
+    const ell = figma.createEllipse();
+    ell.resize(131, 131);
+    ell.x = cx; ell.y = 256;
+    ell.fills = solidFill(c.hex);
+    if ((c.hex || '').toLowerCase().replace('#', '') === 'ffffff') {
+      ell.strokes = solidFill('#dddddd');
+      ell.strokeWeight = 1;
+    }
+    frame.appendChild(ell);
+    txt({ content: c.name || '', x: cx, y: 404, size: 16, style: 'Bold' }).then(t => frame.appendChild(t));
+    txt({ content: c.hex.toUpperCase(), x: cx, y: 428, size: 14, color: '#59595B' }).then(t => frame.appendChild(t));
   });
 
-  // Color palette title
-  const palTitle = await createText({ content: 'Color Palette', x: 80, y: 520, fontSize: 36, fontFamily: 'Inter', fontStyle: 'Bold', color: '#000' });
-  frame.appendChild(palTitle);
+  // Shade palettes
+  frame.appendChild(await txt({ content: 'Color Palette', x: 80, y: 504, size: 36, style: 'Bold' }));
 
-  const shadeLabels = ['Light','Light :hover','Light :active','Normal','Normal :hover','Normal :active','Dark','Dark :hover','Dark :active','Darker'];
+  const shadeLabels = [
+    'Light', 'Light :hover', 'Light :active',
+    'Normal', 'Normal :hover', 'Normal :active',
+    'Dark', 'Dark :hover', 'Dark :active', 'Darker',
+  ];
 
-  // Draw shade palettes
   colors.slice(0, 7).forEach((c, ci) => {
-    const shades = c.shades || {};
-    const shadeValues = Object.values(shades);
-    const palX = 80 + (ci % 4) * 460;
-    const palY = 600 + Math.floor(ci / 4) * 900;
+    const shades = c.shades ? Object.values(c.shades) : [];
+    const colsPerRow = 4;
+    const palX = 80 + (ci % colsPerRow) * 440;
+    const palY = 584 + Math.floor(ci / colsPerRow) * 700;
 
-    // Family title
-    createText({ content: c.name, x: palX, y: palY, fontSize: 20, fontFamily: 'Inter', fontStyle: 'Bold', color: '#000' }).then(t => frame.appendChild(t));
+    txt({ content: c.name || '', x: palX, y: palY, size: 20, style: 'Bold' }).then(t => frame.appendChild(t));
 
-    shadeValues.slice(0, 10).forEach((hex, si) => {
-      const swatchY = palY + 44 + si * 56;
-      const swatch = createRect(palX, swatchY, 300, 48, hex, 4);
-      frame.appendChild(swatch);
-      createText({ content: shadeLabels[si] || '', x: palX + 310, y: swatchY + 14, fontSize: 13, fontFamily: 'Inter', fontStyle: 'Regular', color: '#59595B' }).then(t => frame.appendChild(t));
+    shades.slice(0, 10).forEach((hex, si) => {
+      const sy = palY + 44 + si * 54;
+      frame.appendChild(rect(palX, sy, 280, 46, hex, 4));
+      txt({ content: shadeLabels[si] || '', x: palX + 292, y: sy + 14, size: 13, color: '#59595B' }).then(t => frame.appendChild(t));
     });
   });
 
   return frame;
 }
 
-// ═══════════════════════════════════════════════
-//  FRAME 7: BUTTONS
-// ═══════════════════════════════════════════════
-async function createButtonsFrame(data) {
+// ════════════════════════════════════════════════
+//  FRAME 7 — BUTTONS
+// ════════════════════════════════════════════════
+async function buildButtons(data, primary) {
   const frame = figma.createFrame();
   frame.name = 'Buttons';
   frame.resize(1920, 1626);
   frame.fills = solidFill('#FFFFFF');
   frame.clipsContent = true;
+  await addHeader(frame, 'Buttons', primary);
 
-  const primaryHex = data.colors?.[0]?.hex || '#2078BA';
-  await addFrameHeader(frame, 'Buttons', primaryHex, null);
-
-  const br = data.styles?.borderRadius?.M || 12;
-  await loadFont('Inter', 'Bold');
-  await loadFont('Inter', 'Regular');
+  const br = (data.styles && data.styles.borderRadius && data.styles.borderRadius.M) || 12;
 
   const sections = [
-    { label: 'Primary', y: 220 },
+    { label: 'Primary',   y: 200 },
     { label: 'Secondary', y: 560 },
-    { label: 'Link', y: 900 },
+    { label: 'Link',      y: 900 },
   ];
 
   for (const sec of sections) {
-    // Section label
-    const lbl = await createText({ content: sec.label, x: 80, y: sec.y, fontSize: 40, fontFamily: 'Inter', fontStyle: 'Bold', color: '#000' });
-    frame.appendChild(lbl);
+    frame.appendChild(await txt({ content: sec.label, x: 80, y: sec.y, size: 40, style: 'Bold' }));
 
-    // Column labels
-    const lightLbl = await createText({ content: 'For Light Backgrounds', x: 400, y: sec.y + 56, fontSize: 18, fontFamily: 'Inter', fontStyle: 'Regular', color: '#666' });
-    frame.appendChild(lightLbl);
-    const darkLbl = await createText({ content: 'For Dark Backgrounds', x: 900, y: sec.y + 56, fontSize: 18, fontFamily: 'Inter', fontStyle: 'Regular', color: '#666' });
-    frame.appendChild(darkLbl);
-
-    // Dark bg panel
-    const darkPanel = createRect(880, sec.y + 90, 600, 200, '#383838', 8);
-    frame.appendChild(darkPanel);
+    frame.appendChild(await txt({ content: 'For Light Backgrounds', x: 360, y: sec.y + 56, size: 16, color: '#666666' }));
+    frame.appendChild(await txt({ content: 'For Dark Backgrounds',  x: 860, y: sec.y + 56, size: 16, color: '#666666' }));
+    frame.appendChild(rect(840, sec.y + 88, 580, 200, '#383838', 8));
 
     if (sec.label === 'Primary') {
-      // Default
-      const btn1 = createRect(400, sec.y + 110, 200, 48, primaryHex, br);
-      frame.appendChild(btn1);
-      const btn1t = await createText({ content: 'This is a Button', x: 420, y: sec.y + 124, fontSize: 16, fontFamily: 'Inter', fontStyle: 'Bold', color: '#FFFFFF' });
-      frame.appendChild(btn1t);
+      // Light bg
+      frame.appendChild(rect(360, sec.y + 108, 220, 48, primary, br));
+      frame.appendChild(await txt({ content: 'This is a Button', x: 380, y: sec.y + 122, size: 16, style: 'SemiBold', color: '#FFFFFF' }));
+      frame.appendChild(rect(360, sec.y + 180, 220, 48, '#FFFFFF', br, primary, 1.5));
+      frame.appendChild(await txt({ content: 'This is a Button', x: 380, y: sec.y + 194, size: 16, style: 'SemiBold', color: primary }));
+      // Dark bg
+      frame.appendChild(rect(860, sec.y + 108, 220, 48, primary, br));
+      frame.appendChild(await txt({ content: 'This is a Button', x: 880, y: sec.y + 122, size: 16, style: 'SemiBold', color: '#FFFFFF' }));
+      frame.appendChild(rect(860, sec.y + 180, 220, 48, '#FFFFFF', br, primary, 1.5));
+      frame.appendChild(await txt({ content: 'This is a Button', x: 880, y: sec.y + 194, size: 16, style: 'SemiBold', color: primary }));
+    }
 
-      // Hover
-      const btn2 = createRect(400, sec.y + 186, 200, 48, '#FFFFFF', br, primaryHex, 1.5);
-      frame.appendChild(btn2);
-      const btn2t = await createText({ content: 'This is a Button', x: 420, y: sec.y + 200, fontSize: 16, fontFamily: 'Inter', fontStyle: 'Bold', color: primaryHex });
-      frame.appendChild(btn2t);
+    if (sec.label === 'Secondary') {
+      frame.appendChild(rect(360, sec.y + 108, 220, 48, '#FFFFFF', br, primary, 1.5));
+      frame.appendChild(await txt({ content: 'This is a Button', x: 380, y: sec.y + 122, size: 16, style: 'SemiBold', color: primary }));
+      frame.appendChild(rect(360, sec.y + 180, 220, 48, primary, br));
+      frame.appendChild(await txt({ content: 'This is a Button', x: 380, y: sec.y + 194, size: 16, style: 'SemiBold', color: '#FFFFFF' }));
 
-      // Dark bg variants
-      const btn3 = createRect(900, sec.y + 110, 200, 48, primaryHex, br);
-      frame.appendChild(btn3);
-      const btn3t = await createText({ content: 'This is a Button', x: 920, y: sec.y + 124, fontSize: 16, fontFamily: 'Inter', fontStyle: 'Bold', color: '#FFFFFF' });
-      frame.appendChild(btn3t);
+      frame.appendChild(rect(860, sec.y + 108, 220, 48, '#FFFFFF', br, primary, 1.5));
+      frame.appendChild(await txt({ content: 'This is a Button', x: 880, y: sec.y + 122, size: 16, style: 'SemiBold', color: primary }));
+    }
 
-    } else if (sec.label === 'Secondary') {
-      const btn1 = createRect(400, sec.y + 110, 200, 48, '#FFFFFF', br, primaryHex, 1.5);
-      frame.appendChild(btn1);
-      const btn1t = await createText({ content: 'This is a Button', x: 420, y: sec.y + 124, fontSize: 16, fontFamily: 'Inter', fontStyle: 'Bold', color: primaryHex });
-      frame.appendChild(btn1t);
-
-      const btn2 = createRect(400, sec.y + 186, 200, 48, primaryHex, br);
-      frame.appendChild(btn2);
-      const btn2t = await createText({ content: 'This is a Button', x: 420, y: sec.y + 200, fontSize: 16, fontFamily: 'Inter', fontStyle: 'Bold', color: '#FFFFFF' });
-      frame.appendChild(btn2t);
-
-    } else if (sec.label === 'Link') {
-      const btn1t = await createText({ content: 'See More →', x: 400, y: sec.y + 124, fontSize: 16, fontFamily: 'Inter', fontStyle: 'Bold', color: '#000000' });
-      frame.appendChild(btn1t);
-      const btn2t = await createText({ content: 'See More →', x: 400, y: sec.y + 172, fontSize: 16, fontFamily: 'Inter', fontStyle: 'Bold', color: primaryHex });
-      frame.appendChild(btn2t);
+    if (sec.label === 'Link') {
+      frame.appendChild(await txt({ content: 'See More →', x: 360, y: sec.y + 122, size: 16, style: 'SemiBold', color: '#000000' }));
+      frame.appendChild(await txt({ content: 'See More →', x: 360, y: sec.y + 172, size: 16, style: 'SemiBold', color: primary }));
+      frame.appendChild(await txt({ content: 'See More →', x: 860, y: sec.y + 122, size: 16, style: 'SemiBold', color: '#FFFFFF' }));
     }
   }
 
   return frame;
 }
 
-// ═══════════════════════════════════════════════
-//  FRAME 8: IMAGES
-// ═══════════════════════════════════════════════
-async function createImagesFrame(data) {
+// ════════════════════════════════════════════════
+//  FRAME 8 — IMAGES
+// ════════════════════════════════════════════════
+async function buildImages(data, primary) {
+  const images = data.images || [];
+  const rows = Math.max(Math.ceil(images.length / 3), 2);
+  const frameH = 220 + rows * 480 + 80;
+
   const frame = figma.createFrame();
   frame.name = 'Images';
-  frame.resize(1920, 3703);
+  frame.resize(1920, Math.max(frameH, 3703));
   frame.fills = solidFill('#FFFFFF');
   frame.clipsContent = true;
-
-  const primaryHex = data.colors?.[0]?.hex || '#2078BA';
-  await addFrameHeader(frame, 'Images', primaryHex, null);
-
-  const images = data.images || [];
-  const cols = 3;
-  const imgW = 560;
-  const imgH = 420;
-  const gap = 40;
-  const startX = 80;
-  const startY = 220;
+  await addHeader(frame, 'Images', primary);
 
   if (images.length === 0) {
-    const empty = await createText({ content: 'Nenhuma imagem adicionada.', x: 80, y: 260, fontSize: 24, fontFamily: 'Inter', fontStyle: 'Regular', color: '#999' });
-    frame.appendChild(empty);
+    frame.appendChild(await txt({ content: 'Nenhuma imagem adicionada.', x: 80, y: 220, size: 24, color: '#cccccc' }));
+    return frame;
   }
+
+  const cols = 3;
+  const imgW = 560, imgH = 420, gap = 40, startX = 80, startY = 220;
 
   for (let i = 0; i < images.length; i++) {
     const col = i % cols;
@@ -586,104 +532,116 @@ async function createImagesFrame(data) {
     const y = startY + row * (imgH + gap);
 
     try {
-      const base64 = images[i].split(',')[1];
-      const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+      const b64 = images[i].replace(/^data:image\/\w+;base64,/, '');
+      const bytes = figma.base64Decode(b64);
       const img = figma.createImage(bytes);
-      const r = createRect(x, y, imgW, imgH, null, 8);
+      const r = rect(x, y, imgW, imgH, null, 8);
       r.fills = [{ type: 'IMAGE', scaleMode: 'FILL', imageHash: img.hash }];
       frame.appendChild(r);
-    } catch(e) {
-      const placeholder = createRect(x, y, imgW, imgH, '#f0f0f0', 8);
+    } catch (_) {
+      const placeholder = rect(x, y, imgW, imgH, '#f0f0f0', 8, '#dddddd', 1);
       frame.appendChild(placeholder);
+      txt({ content: '🖼', x: x + imgW / 2 - 12, y: y + imgH / 2 - 12, size: 24 }).then(t => frame.appendChild(t));
     }
   }
 
   return frame;
 }
 
-// ═══════════════════════════════════════════════
-//  FRAME 9: COMPONENTS (empty)
-// ═══════════════════════════════════════════════
-async function createComponentsFrame(data) {
+// ════════════════════════════════════════════════
+//  FRAME 9 — COMPONENTS (empty)
+// ════════════════════════════════════════════════
+async function buildComponents(data, primary) {
   const frame = figma.createFrame();
   frame.name = 'Components';
   frame.resize(1920, 2059);
   frame.fills = solidFill('#FFFFFF');
   frame.clipsContent = true;
+  await addHeader(frame, 'Components', primary);
 
-  const primaryHex = data.colors?.[0]?.hex || '#2078BA';
-  await addFrameHeader(frame, 'Components', primaryHex, null);
-
-  const placeholder = await createText({
-    content: 'Components — será preenchido manualmente',
-    x: 80, y: 260, fontSize: 28, fontFamily: 'Inter', fontStyle: 'Regular', color: '#cccccc'
-  });
-  frame.appendChild(placeholder);
+  frame.appendChild(await txt({
+    content: 'Components — a ser preenchido no Figma',
+    x: 80, y: 260, size: 28, color: '#cccccc',
+  }));
 
   return frame;
 }
 
-// ═══════════════════════════════════════════════
-//  MAIN HANDLER
-// ═══════════════════════════════════════════════
+// ════════════════════════════════════════════════
+//  MAIN
+// ════════════════════════════════════════════════
 figma.ui.onmessage = async (msg) => {
   if (msg.type !== 'CREATE_STYLE_GUIDE') return;
 
   const data = msg.data;
-  let framesCreated = 0;
+  const primary = (data.colors && data.colors[0] && data.colors[0].hex) || '#2078BA';
 
   try {
-    // Create a new page for the style guide
-    const page = figma.createPage();
-    page.name = `Style Guide — ${data.project?.name || 'D&Z'}`;
-    figma.currentPage = page;
+    figma.notify('⏳ Criando Style Guide…');
 
-    const LAYOUT_GAP = 100;
-    let currentX = 0;
+    // Preload safe fonts first
+    prog('Carregando fontes…', 2);
+    await preloadFonts();
 
-    const addFrame = (frame) => {
-      frame.x = currentX;
+    // Use a new page or current page
+    let targetPage;
+    try {
+      targetPage = figma.createPage();
+      targetPage.name = `Style Guide — ${(data.project && data.project.name) || 'D&Z'}`;
+      figma.currentPage = targetPage;
+    } catch (_) {
+      // Can't create page — use current page
+      targetPage = figma.currentPage;
+    }
+
+    const LAYOUT_GAP = 120;
+    let curX = 0;
+    let created = 0;
+
+    const place = (frame) => {
+      frame.x = curX;
       frame.y = 0;
-      page.appendChild(frame);
-      currentX += frame.width + LAYOUT_GAP;
-      framesCreated++;
+      targetPage.appendChild(frame);
+      curX += frame.width + LAYOUT_GAP;
+      created++;
     };
 
-    progress('Criando Project Introduction...', 5, 'intro');
-    addFrame(await createProjectIntroFrame(data));
+    prog('Criando Project Introduction…', 8, 'intro');
+    place(await buildIntro(data, primary));
 
-    progress('Criando Font Weight...', 15, 'fontweight');
-    addFrame(await createFontWeightFrame(data));
+    prog('Criando Font Weight…', 18, 'fontweight');
+    place(await buildFontWeight(data, primary));
 
-    progress('Criando Font Sizes...', 25, 'fontsizes');
-    addFrame(await createFontSizesFrame(data));
+    prog('Criando Font Sizes…', 28, 'fontsizes');
+    place(await buildFontSizes(data, primary));
 
-    progress('Criando Styles...', 40, 'styles');
-    addFrame(await createStylesFrame(data));
+    prog('Criando Styles…', 42, 'styles');
+    place(await buildStyles(data, primary));
 
-    progress('Criando Spacing...', 50, 'spacing');
-    addFrame(await createSpacingFrame(data));
+    prog('Criando Spacing…', 52, 'spacing');
+    place(await buildSpacing(data, primary));
 
-    progress('Criando Colors...', 60, 'colors');
-    addFrame(await createColorsFrame(data));
+    prog('Criando Colors…', 63, 'colors');
+    place(await buildColors(data, primary));
 
-    progress('Criando Buttons...', 72, 'buttons');
-    addFrame(await createButtonsFrame(data));
+    prog('Criando Buttons…', 76, 'buttons');
+    place(await buildButtons(data, primary));
 
-    progress('Criando Images...', 84, 'images');
-    addFrame(await createImagesFrame(data));
+    prog('Criando Images…', 88, 'images');
+    place(await buildImages(data, primary));
 
-    progress('Criando Components...', 95, 'components');
-    addFrame(await createComponentsFrame(data));
+    prog('Criando Components…', 96, 'components');
+    place(await buildComponents(data, primary));
 
-    // Zoom to fit
-    figma.viewport.scrollAndZoomIntoView(page.children);
+    figma.viewport.scrollAndZoomIntoView(targetPage.children);
 
-    figma.ui.postMessage({ type: 'DONE', framesCreated });
-    figma.notify(`✅ Style Guide criado com ${framesCreated} frames!`);
+    figma.ui.postMessage({ type: 'DONE', framesCreated: created });
+    figma.notify(`✅ ${created} frames criados com sucesso!`);
 
   } catch (error) {
-    figma.ui.postMessage({ type: 'ERROR', message: String(error) });
-    figma.notify('❌ Erro ao criar style guide: ' + String(error), { error: true });
+    const msg = String(error);
+    figma.ui.postMessage({ type: 'ERROR', message: msg });
+    figma.notify('❌ Erro: ' + msg, { error: true, timeout: 6000 });
+    console.error('Style Guide Maker error:', error);
   }
 };
