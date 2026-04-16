@@ -1,9 +1,8 @@
 {
   "name": "Style Guide Maker — D&Z",
-  "id": "style-guide-maker-dz",
+  "id": "1145723894036271872",
   "api": "1.0.0",
   "main": "code.js",
   "ui": "ui.html",
-  "editorType": ["figma"],
-  "permissions": ["currentuser"]
+  "editorType": ["figma"]
 }

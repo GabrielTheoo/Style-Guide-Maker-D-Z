@@ -263,20 +263,8 @@
       height: 44px;
       border-radius: 8px;
       border: 1px solid var(--border);
-      cursor: pointer;
-      overflow: hidden;
       flex-shrink: 0;
-      position: relative;
-    }
-    .color-swatch-input input[type="color"] {
-      position: absolute;
-      inset: -4px;
-      width: calc(100% + 8px);
-      height: calc(100% + 8px);
-      border: none;
-      padding: 0;
-      cursor: pointer;
-      background: none;
+      cursor: default;
     }
     .color-name-input {
       flex: 1;
@@ -285,12 +273,21 @@
       padding: 8px 10px;
       font-size: 13px;
     }
-    .color-hex-display {
-      font-size: 12px;
-      color: var(--text-muted);
-      font-family: monospace;
-      min-width: 70px;
-      text-align: right;
+    .color-hex-input {
+      width: 108px;
+      flex-shrink: 0;
+    }
+    .color-hex-input input {
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      padding: 8px 10px;
+    }
+    .color-hex-input input.invalid {
+      border-color: #f87171;
+      background: #fff5f5;
     }
 
     /* ── STYLES ROW ─────────────────────────────────── */
@@ -1125,26 +1122,62 @@ function renderColorControls() {
   const list = document.getElementById('colors-list');
   list.innerHTML = state.colors.map((c, i) => `
     <div class="color-row" id="color-row-${i}">
-      <div class="color-swatch-input" style="background:${c.hex};">
-        <input type="color" value="${c.hex}" oninput="updateColor(${i}, 'hex', this.value)">
-      </div>
+      <div class="color-swatch-input" id="swatch-${i}" style="background:${c.hex};"></div>
       <div class="color-name-input">
         <input type="text" value="${c.name}" placeholder="Nome da cor" oninput="updateColor(${i}, 'name', this.value)" style="font-size:13px;">
       </div>
-      <div class="color-hex-display" id="hex-display-${i}">${c.hex}</div>
+      <div class="color-hex-input">
+        <input type="text" id="hex-input-${i}" value="${c.hex.toUpperCase()}" placeholder="#000000"
+          oninput="updateColor(${i}, 'hex', this.value)"
+          onblur="normalizeHex(${i})"
+          maxlength="7" spellcheck="false">
+      </div>
     </div>
   `).join('');
 }
 
-function updateColor(i, key, val) {
-  state.colors[i][key] = val;
-  if (key === 'hex') {
-    document.getElementById(`hex-display-${i}`).textContent = val;
-    const row = document.getElementById(`color-row-${i}`);
-    row.querySelector('.color-swatch-input').style.background = val;
+function isValidHex(hex) {
+  return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(hex);
+}
+
+function normalizeHex(i) {
+  const input = document.getElementById(`hex-input-${i}`);
+  let val = input.value.trim();
+  if (!val.startsWith('#')) val = '#' + val;
+  if (/^#[0-9A-Fa-f]{3}$/.test(val)) {
+    val = '#' + val[1]+val[1]+val[2]+val[2]+val[3]+val[3];
   }
-  updateColorsPreview();
-  updateButtonsPreview();
+  val = val.toUpperCase();
+  input.value = val;
+  if (isValidHex(val)) {
+    input.classList.remove('invalid');
+    state.colors[i].hex = val;
+    document.getElementById(`swatch-${i}`).style.background = val;
+    updateColorsPreview();
+    updateButtonsPreview();
+  }
+}
+
+function updateColor(i, key, val) {
+  if (key === 'name') {
+    state.colors[i].name = val;
+    updateColorsPreview();
+    return;
+  }
+  if (key === 'hex') {
+    let hex = val.trim();
+    if (!hex.startsWith('#')) hex = '#' + hex;
+    const input = document.getElementById(`hex-input-${i}`);
+    if (isValidHex(hex)) {
+      input.classList.remove('invalid');
+      state.colors[i].hex = hex.toUpperCase();
+      document.getElementById(`swatch-${i}`).style.background = hex;
+      updateColorsPreview();
+      updateButtonsPreview();
+    } else {
+      input.classList.add('invalid');
+    }
+  }
 }
 
 function updateColorsPreview() {
