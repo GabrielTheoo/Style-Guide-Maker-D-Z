@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Style Maker — D&Z</title>
+  <title>Style Guide Maker — D&Z</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -615,7 +615,7 @@
   </div>
   <button class="btn-export" onclick="exportJSON()">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-    Exportar JSON para Figma
+    Export JSON for Figma
   </button>
 </header>
 
@@ -624,16 +624,16 @@
 
   <!-- SIDEBAR -->
   <nav class="sidebar">
-    <div class="sidebar-label">Seções</div>
-    <a class="nav-item active" href="#section-intro" onclick="setActive(this)"><span class="nav-icon">🖼️</span> Introdução</a>
-    <a class="nav-item" href="#section-typography" onclick="setActive(this)"><span class="nav-icon">🔤</span> Tipografia</a>
-    <a class="nav-item" href="#section-colors" onclick="setActive(this)"><span class="nav-icon">🎨</span> Cores</a>
-    <a class="nav-item" href="#section-styles" onclick="setActive(this)"><span class="nav-icon">✦</span> Estilos</a>
-    <a class="nav-item" href="#section-buttons" onclick="setActive(this)"><span class="nav-icon">⬛</span> Botões</a>
-    <a class="nav-item" href="#section-images" onclick="setActive(this)"><span class="nav-icon">🏞️</span> Imagens</a>
-    <a class="nav-item" href="#section-spacing" onclick="setActive(this)"><span class="nav-icon">↔️</span> Espaçamento</a>
-    <a class="nav-item" href="#section-icons" onclick="setActive(this)"><span class="nav-icon">⚡</span> Ícones</a>
-    <a class="nav-item" href="#section-components" onclick="setActive(this)"><span class="nav-icon">🧩</span> Componentes</a>
+    <div class="sidebar-label">Sections</div>
+    <a class="nav-item active" href="#section-intro" onclick="setActive(this)"><span class="nav-icon">🖼️</span> Introduction</a>
+    <a class="nav-item" href="#section-typography" onclick="setActive(this)"><span class="nav-icon">🔤</span> Typography</a>
+    <a class="nav-item" href="#section-colors" onclick="setActive(this)"><span class="nav-icon">🎨</span> Colors</a>
+    <a class="nav-item" href="#section-styles" onclick="setActive(this)"><span class="nav-icon">✦</span> Styles</a>
+    <a class="nav-item" href="#section-buttons" onclick="setActive(this)"><span class="nav-icon">⬛</span> Buttons</a>
+    <a class="nav-item" href="#section-images" onclick="setActive(this)"><span class="nav-icon">🏞️</span> Images</a>
+    <a class="nav-item" href="#section-spacing" onclick="setActive(this)"><span class="nav-icon">↔️</span> Spacing</a>
+    <a class="nav-item" href="#section-icons" onclick="setActive(this)"><span class="nav-icon">⚡</span> Icons</a>
+    <a class="nav-item" href="#section-components" onclick="setActive(this)"><span class="nav-icon">🧩</span> Components</a>
   </nav>
 
   <!-- MAIN -->
@@ -644,12 +644,12 @@
       <div class="section-header">
         <span class="section-icon">🖼️</span>
         <h2>Project Introduction</h2>
-        <span class="section-badge">1920 × 1080</span>
+        <span class="section-badge">1920 × 1080px</span>
       </div>
       <div class="section-body">
         <div class="controls-panel">
           <div class="field">
-            <label>Nome do Projeto</label>
+            <label>Project Name</label>
             <input type="text" id="proj-name" placeholder="Ex: Ababa Bolt" oninput="updateIntroPreview()">
           </div>
           <div class="field">
@@ -661,16 +661,16 @@
             <div class="upload-area" id="logo-area">
               <input type="file" accept="image/*" onchange="handleLogoUpload(event)">
               <div class="upload-icon">⬆️</div>
-              <p>Clique ou arraste o logo</p>
+              <p>Click or drag the logo</p>
               <div class="upload-filename" id="logo-filename"></div>
             </div>
           </div>
           <div class="field">
-            <label>Imagem de Fundo</label>
+            <label>Background Image</label>
             <div class="upload-area" id="bg-area">
               <input type="file" accept="image/*" onchange="handleBgUpload(event)">
               <div class="upload-icon">🌄</div>
-              <p>Clique ou arraste uma imagem</p>
+              <p>Click or drag an image</p>
               <div class="upload-filename" id="bg-filename"></div>
             </div>
           </div>
@@ -681,8 +681,8 @@
             <div id="intro-bg-overlay" style="position:absolute;inset:0;background:linear-gradient(135deg,#2078BA 0%,#0B5056 100%);"></div>
             <div class="preview-intro-overlay">
               <div class="preview-intro-logo" id="preview-logo-name">Logo</div>
-              <div class="preview-intro-name" id="preview-proj-name">Nome do Projeto</div>
-              <div class="preview-intro-tagline" id="preview-proj-tagline">Tagline do projeto</div>
+              <div class="preview-intro-name" id="preview-proj-name">Project Name</div>
+              <div class="preview-intro-tagline" id="preview-proj-tagline">Project tagline</div>
             </div>
           </div>
         </div>
@@ -693,13 +693,13 @@
     <div class="section-card" id="section-typography">
       <div class="section-header">
         <span class="section-icon">🔤</span>
-        <h2>Tipografia</h2>
+        <h2>Typography</h2>
         <span class="section-badge">Font Weight + Sizes</span>
       </div>
       <div class="section-body">
         <div class="controls-panel">
           <div class="field">
-            <label>Fonte Principal</label>
+            <label>Primary Font</label>
             <div class="font-select-wrap">
               <select id="font-select" onchange="updateTypographyPreview()">
                 <option value="Montserrat">Montserrat</option>
@@ -714,38 +714,38 @@
                 <option value="Source Sans Pro">Source Sans Pro</option>
               </select>
             </div>
-            <div class="font-status" id="font-status">Selecione ou carregue fontes do sistema</div>
+            <div class="font-status" id="font-status">Select or load system fonts</div>
           </div>
           <div class="field">
-            <label>Ou insira o nome da fonte</label>
+            <label>Or type the font name</label>
             <input type="text" id="font-manual" placeholder="Ex: Helvetica Neue LT Pro" oninput="updateFontFromManual()">
           </div>
           <div class="field">
-            <label>Texto de amostra</label>
+            <label>Sample Text</label>
             <input type="text" id="font-sample" value="The quick brown fox jumps over the lazy dog" oninput="updateTypographyPreview()">
           </div>
           <div class="field">
             <div class="lh-row" style="gap:16px;">
               <div style="flex:1;">
-                <label>LH — Títulos <span style="font-weight:400;color:#aaa;">(px · base H1 52px)</span></label>
+                <label>LH — Headings <span style="font-weight:400;color:#aaa;">(px · H1 base 52px)</span></label>
                 <input type="number" id="lh-head" min="20" max="200" step="1" value="64" oninput="updateLineHeight()" style="margin-top:6px;">
               </div>
               <div style="flex:1;">
-                <label>LH — Corpo <span style="font-weight:400;color:#aaa;">(px · base 20px)</span></label>
+                <label>LH — Body <span style="font-weight:400;color:#aaa;">(px · base 20px)</span></label>
                 <input type="number" id="lh-body" min="12" max="100" step="1" value="32" oninput="updateLineHeight()" style="margin-top:6px;">
               </div>
             </div>
-            <div class="lh-labels" style="margin-top:6px;"><span>Valores em px exatos, como no Figma. Os demais tamanhos são calculados proporcionalmente.</span></div>
+            <div class="lh-labels" style="margin-top:6px;"><span>Exact px values, as in Figma. Other sizes are calculated proportionally.</span></div>
           </div>
 
           <!-- Font Sizes per style -->
           <div class="field">
-            <label>Tamanhos de Fonte (px)</label>
+            <label>Font Sizes (px)</label>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;">
 
               <!-- Headers column -->
               <div>
-                <div style="font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#aaa;margin-bottom:6px;">Títulos</div>
+                <div style="font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#aaa;margin-bottom:6px;">Headings</div>
                 <div style="display:flex;flex-direction:column;gap:5px;">
                   <div style="display:flex;align-items:center;gap:8px;">
                     <span style="font-size:12px;font-weight:700;color:#555;min-width:28px;">H1</span>
@@ -776,7 +776,7 @@
 
               <!-- Body column -->
               <div>
-                <div style="font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#aaa;margin-bottom:6px;">Corpo</div>
+                <div style="font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#aaa;margin-bottom:6px;">Body</div>
                 <div style="display:flex;flex-direction:column;gap:5px;">
                   <div style="display:flex;align-items:center;gap:8px;">
                     <span style="font-size:11px;font-weight:600;color:#555;min-width:44px;">Body L</span>
@@ -821,18 +821,18 @@
     <div class="section-card" id="section-colors">
       <div class="section-header">
         <span class="section-icon">🎨</span>
-        <h2>Cores</h2>
-        <span class="section-badge">7 cores + variações</span>
+        <h2>Colors</h2>
+        <span class="section-badge">7 colors + variations</span>
       </div>
       <div class="section-body">
         <div class="controls-panel">
           <div id="colors-list"></div>
         </div>
         <div class="preview-panel">
-          <div class="preview-label">Cores + Paletas</div>
+          <div class="preview-label">Colors + Palettes</div>
           <div class="preview-colors-grid" id="colors-circles"></div>
           <div style="margin-top:16px;">
-            <div class="preview-label">Variações (10 tons por cor)</div>
+            <div class="preview-label">Variations (10 tones per color)</div>
             <div id="shade-strips"></div>
           </div>
         </div>
@@ -843,7 +843,7 @@
     <div class="section-card" id="section-styles">
       <div class="section-header">
         <span class="section-icon">✦</span>
-        <h2>Estilos</h2>
+        <h2>Styles</h2>
         <span class="section-badge">Border Radius · Stroke · Drop Shadow</span>
       </div>
       <div class="section-body">
@@ -894,11 +894,11 @@
                 <input type="number" id="shadow-y" value="4" oninput="updateStylesPreview()">
               </div>
               <div class="style-input-group">
-                <label>Cor</label>
+                <label>Color</label>
                 <input type="text" id="shadow-color" value="#000000" oninput="updateStylesPreview()">
               </div>
               <div class="style-input-group">
-                <label>Opacidade (%)</label>
+                <label>Opacity (%)</label>
                 <input type="number" id="shadow-opacity" value="16" min="0" max="100" oninput="updateStylesPreview()">
               </div>
             </div>
@@ -919,12 +919,12 @@
     <div class="section-card" id="section-buttons">
       <div class="section-header">
         <span class="section-icon">⬛</span>
-        <h2>Botões</h2>
-        <span class="section-badge">Auto-gerado pelas cores</span>
+        <h2>Buttons</h2>
+        <span class="section-badge">Auto-generated from colors</span>
       </div>
       <div class="section-body single">
         <div style="padding:24px;">
-          <div class="preview-label">Baseado na 1ª cor da paleta como Primary</div>
+          <div class="preview-label">Based on 1st palette color as Primary</div>
           <div id="buttons-preview" style="display:flex;flex-wrap:wrap;gap:32px;"></div>
         </div>
       </div>
@@ -934,15 +934,15 @@
     <div class="section-card" id="section-images">
       <div class="section-header">
         <span class="section-icon">🏞️</span>
-        <h2>Imagens</h2>
-        <span class="section-badge">Upload múltiplo</span>
+        <h2>Images</h2>
+        <span class="section-badge">Multiple upload</span>
       </div>
       <div class="section-body">
         <div class="controls-panel">
           <div class="images-drop-zone" id="images-drop-zone">
             <input type="file" accept="image/*" multiple onchange="handleImagesUpload(event)" id="images-input">
             <div class="upload-icon">📁</div>
-            <p><strong>Clique ou arraste imagens</strong></p>
+            <p><strong>Click or drag images</strong></p>
             <p style="font-size:11px;margin-top:4px;">JPG, PNG, GIF, WebP</p>
           </div>
           <div class="images-list" id="images-list"></div>
@@ -962,15 +962,15 @@
     <div class="section-card" id="section-spacing">
       <div class="section-header">
         <span class="section-icon">↔️</span>
-        <h2>Espaçamento</h2>
-        <span class="section-badge">1920 × 1853</span>
+        <h2>Spacing</h2>
+        <span class="section-badge">1920 × 1853px</span>
       </div>
       <div class="static-note">
-        ℹ️ O frame de Espaçamento será exportado <strong>exatamente como está</strong> no guia de estilo original.
+        ℹ️ The Spacing frame will be exported <strong>exactly as-is</strong> in the style guide.
       </div>
       <div class="section-body single">
         <div style="padding:24px;">
-          <div class="preview-label">Escala de Espaçamento (padrão do guia)</div>
+          <div class="preview-label">Spacing Scale</div>
           <div style="display:flex;flex-direction:column;gap:8px;" id="spacing-preview"></div>
         </div>
       </div>
@@ -980,17 +980,17 @@
     <div class="section-card" id="section-icons">
       <div class="section-header">
         <span class="section-icon">⚡</span>
-        <h2>Iconografia</h2>
-        <span class="section-badge">1920 × 3222</span>
+        <h2>Iconography</h2>
+        <span class="section-badge">1920 × 3222px</span>
       </div>
       <div class="static-note">
-        ℹ️ O frame de Ícones será exportado <strong>exatamente como está</strong> no guia de estilo original.
+        ℹ️ The Icons frame will be exported <strong>exactly as-is</strong> in the style guide.
       </div>
       <div class="section-body single">
         <div style="padding:24px;">
           <div class="empty-state">
             <div class="empty-icon">⚡</div>
-            <p>Os ícones serão replicados do frame original do Figma.</p>
+            <p>Icons will be replicated from the original Figma frame.</p>
           </div>
         </div>
       </div>
@@ -1000,12 +1000,12 @@
     <div class="section-card" id="section-components">
       <div class="section-header">
         <span class="section-icon">🧩</span>
-        <h2>Componentes</h2>
-        <span class="section-badge">1920 × 2059</span>
+        <h2>Components</h2>
+        <span class="section-badge">1920 × 2059px</span>
       </div>
       <div class="components-empty">
         <div class="icon">🧩</div>
-        <p>Frame de Componentes criado em branco.<br>Será preenchido manualmente no Figma.</p>
+        <p>Components frame created blank.<br>Will be filled manually in Figma.</p>
       </div>
     </div>
 
@@ -1129,8 +1129,8 @@ document.querySelectorAll('.section-card[id]').forEach(s => observer.observe(s))
 function updateIntroPreview() {
   state.project.name = document.getElementById('proj-name').value;
   state.project.tagline = document.getElementById('proj-tagline').value;
-  document.getElementById('preview-proj-name').textContent = state.project.name || 'Nome do Projeto';
-  document.getElementById('preview-proj-tagline').textContent = state.project.tagline || 'Tagline do projeto';
+  document.getElementById('preview-proj-name').textContent = state.project.name || 'Project Name';
+  document.getElementById('preview-proj-tagline').textContent = state.project.tagline || 'Project tagline';
 }
 
 function handleLogoUpload(e) {
@@ -1178,10 +1178,10 @@ async function loadSystemFonts() {
           sel.appendChild(opt);
         }
       });
-      document.getElementById('font-status').textContent = `${families.length} fontes do sistema carregadas`;
+      document.getElementById('font-status').textContent = `${families.length} system fonts loaded`;
     }
   } catch(e) {
-    document.getElementById('font-status').textContent = 'Fontes do sistema não disponíveis (use Chrome/Edge)';
+    document.getElementById('font-status').textContent = 'System fonts not available (use Chrome/Edge)';
   }
 }
 

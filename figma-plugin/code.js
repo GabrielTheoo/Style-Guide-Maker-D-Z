@@ -252,20 +252,20 @@ async function createFigmaStyles(d, ff) {
   var szLbl = _fs.label   || 16;
   var szCap = _fs.caption || 12;
 
-  // ── Text styles under "Textos/"
+  // ── Text styles under "Text/"
   const textSpecs = [
-    { name: 'Textos/H1',      size: szH1,  style: 'Bold',     lh: lhHb },
-    { name: 'Textos/H2',      size: szH2,  style: 'Bold',     lh: lh(szH2,  szH1, lhHb) },
-    { name: 'Textos/H3',      size: szH3,  style: 'Regular',  lh: lh(szH3,  szH1, lhHb) },
-    { name: 'Textos/H4',      size: szH4,  style: 'Bold',     lh: lh(szH4,  szH1, lhHb) },
-    { name: 'Textos/H5',      size: szH5,  style: 'Bold',     lh: lh(szH5,  szH1, lhHb) },
-    { name: 'Textos/H6',      size: szH6,  style: 'Regular',  lh: lh(szH6,  szH1, lhHb) },
-    { name: 'Textos/Body L',  size: szBL,  style: 'Regular',  lh: lhBb },
-    { name: 'Textos/Body M',  size: szBM,  style: 'Regular',  lh: lh(szBM,  szBL, lhBb) },
-    { name: 'Textos/Body S',  size: szBS,  style: 'Regular',  lh: lh(szBS,  szBL, lhBb) },
-    { name: 'Textos/Button',  size: szBtn, style: 'SemiBold', lh: lh(szBtn, szBL, lhBb) },
-    { name: 'Textos/Label',   size: szLbl, style: 'Medium',   lh: lh(szLbl, szBL, lhBb) },
-    { name: 'Textos/Caption', size: szCap, style: 'Regular',  lh: lh(szCap, szBL, lhBb) },
+    { name: 'Text/H1',      size: szH1,  style: 'Bold',     lh: lhHb },
+    { name: 'Text/H2',      size: szH2,  style: 'Bold',     lh: lh(szH2,  szH1, lhHb) },
+    { name: 'Text/H3',      size: szH3,  style: 'Regular',  lh: lh(szH3,  szH1, lhHb) },
+    { name: 'Text/H4',      size: szH4,  style: 'Bold',     lh: lh(szH4,  szH1, lhHb) },
+    { name: 'Text/H5',      size: szH5,  style: 'Bold',     lh: lh(szH5,  szH1, lhHb) },
+    { name: 'Text/H6',      size: szH6,  style: 'Regular',  lh: lh(szH6,  szH1, lhHb) },
+    { name: 'Text/Body L',  size: szBL,  style: 'Regular',  lh: lhBb },
+    { name: 'Text/Body M',  size: szBM,  style: 'Regular',  lh: lh(szBM,  szBL, lhBb) },
+    { name: 'Text/Body S',  size: szBS,  style: 'Regular',  lh: lh(szBS,  szBL, lhBb) },
+    { name: 'Text/Button',  size: szBtn, style: 'SemiBold', lh: lh(szBtn, szBL, lhBb) },
+    { name: 'Text/Label',   size: szLbl, style: 'Medium',   lh: lh(szLbl, szBL, lhBb) },
+    { name: 'Text/Caption', size: szCap, style: 'Regular',  lh: lh(szCap, szBL, lhBb) },
   ];
   for (const s of textSpecs) {
     try {
@@ -276,12 +276,12 @@ async function createFigmaStyles(d, ff) {
     } catch (_) {}
   }
 
-  // ── Color styles under "Cores/{ColorName}/"
+  // ── Color styles under "Colors/{ColorName}/"
   const shadeNames = ['Light', 'Light Hover', 'Light Active', 'Normal', 'Normal Hover', 'Normal Active', 'Dark', 'Dark Hover', 'Dark Active', 'Darker'];
   for (const c of (d.colors || [])) {
     try {
       const ps = figma.createPaintStyle();
-      ps.name = `Cores/${c.name}/Base`;
+      ps.name = `Colors/${c.name}/Base`;
       ps.paints = fill(c.hex);
     } catch (_) {}
     if (c.shades) {
@@ -289,7 +289,7 @@ async function createFigmaStyles(d, ff) {
       for (let i = 0; i < Math.min(vals.length, shadeNames.length); i++) {
         try {
           const ps = figma.createPaintStyle();
-          ps.name = `Cores/${c.name}/${shadeNames[i]}`;
+          ps.name = `Colors/${c.name}/${shadeNames[i]}`;
           ps.paints = fill(vals[i]);
         } catch (_) {}
       }
@@ -359,7 +359,7 @@ async function buildFontWeight(d, primary, ff) {
   bigName.characters = ff;
   content.appendChild(bigName);
 
-  content.appendChild(await mkT({ text: 'Família tipográfica', size: 16, color: '#999999' }));
+  content.appendChild(await mkT({ text: 'Type Family', size: 16, color: '#999999' }));
   content.appendChild(sp(8, 1760));
 
   // Weight grid — 3 columns × 3 rows
@@ -722,9 +722,9 @@ async function buildButtons(d, primary, ff) {
   const brM = (d.styles && d.styles.borderRadius && d.styles.borderRadius.M) || 12;
 
   const sections = [
-    { label: 'Primary',   info: 'Ação principal do sistema' },
-    { label: 'Secondary', info: 'Ação secundária / alternativa' },
-    { label: 'Link',      info: 'Ação de texto / link inline' },
+    { label: 'Primary',   info: 'Main system action' },
+    { label: 'Secondary', info: 'Secondary / alternative action' },
+    { label: 'Link',      info: 'Text action / inline link' },
   ];
 
   for (const sec of sections) {
@@ -911,7 +911,7 @@ figma.ui.onmessage = async (message) => {
 
     figma.viewport.scrollAndZoomIntoView(page.children);
     figma.ui.postMessage({ type: 'DONE', count });
-    figma.notify('✅ ' + count + ' frames + estilos criados!');
+    figma.notify('✅ ' + count + ' frames + styles created!');
 
   } catch (err) {
     const errMsg = (err && err.message) ? err.message : String(err);

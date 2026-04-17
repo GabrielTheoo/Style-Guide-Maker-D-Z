@@ -61,33 +61,33 @@ p{font-size:12px;color:#59595B;line-height:1.5;margin-bottom:12px}
 <body>
 <div class="header">
   <div class="header-title">Style Guide Maker — D&amp;Z</div>
-  <div class="header-sub">Carregue o JSON exportado pelo site</div>
+  <div class="header-sub">Load the JSON exported from the website</div>
 </div>
 <div class="body">
 
   <!-- Font picker -->
   <div class="section-label">
-    Fonte <span class="font-count" id="font-count">Carregando…</span>
+    Font <span class="font-count" id="font-count">Loading…</span>
   </div>
   <div class="font-wrap">
     <input type="text" class="font-input" id="font-input"
-           placeholder="Carregando fontes…" disabled autocomplete="off" spellcheck="false">
+           placeholder="Loading fonts…" disabled autocomplete="off" spellcheck="false">
     <div class="font-dropdown" id="font-dropdown"></div>
   </div>
-  <p class="font-hint" style="margin-bottom:14px">Selecione uma fonte instalada para usar no style guide. Deixe vazio para usar a do JSON.</p>
+  <p class="font-hint" style="margin-bottom:14px">Select an installed font to use in the style guide. Leave empty to use the one from the JSON.</p>
 
   <!-- File drop -->
-  <div class="section-label">Arquivo JSON</div>
+  <div class="section-label">JSON File</div>
   <div class="drop" id="drop">
     <input type="file" accept=".json,application/json" id="file-input" onchange="loadFile(event)">
     <div class="drop-icon">📄</div>
-    <div class="drop-label"><strong>Clique ou arraste</strong> o arquivo .json</div>
+    <div class="drop-label"><strong>Click or drag</strong> the .json file</div>
   </div>
   <div class="file-ok" id="file-ok"></div>
 
   <!-- Steps -->
   <div class="steps">
-    <div class="steps-title">Frames que serão criados</div>
+    <div class="steps-title">Frames to be created</div>
     <div class="step"><span class="dot" id="d-intro"></span>Project Introduction</div>
     <div class="step"><span class="dot" id="d-fw"></span>Font Weight</div>
     <div class="step"><span class="dot" id="d-fs"></span>Font Sizes</div>
@@ -101,7 +101,7 @@ p{font-size:12px;color:#59595B;line-height:1.5;margin-bottom:12px}
 
   <div class="pb-wrap" id="pb-wrap"><div class="pb" id="pb" style="width:0%"></div></div>
   <div class="pt" id="pt"></div>
-  <button class="btn" id="btn" onclick="run()" disabled>✦ Criar Style Guide no Figma</button>
+  <button class="btn" id="btn" onclick="run()" disabled>✦ Create Style Guide in Figma</button>
   <div class="msg" id="msg"></div>
 </div>
 
@@ -174,7 +174,7 @@ function readFile(file) {
         selectedFont = jsonFont;
       }
       setMsg('', '');
-    } catch(e) { setMsg('err', 'JSON inválido: ' + e.message); }
+    } catch(e) { setMsg('err', 'Invalid JSON: ' + e.message); }
   };
   reader.readAsText(file);
 }
@@ -204,9 +204,9 @@ window.onmessage = e => {
   if (m.type === 'FONTS_LOADED') {
     allFonts = m.fonts;
     const cnt = document.getElementById('font-count');
-    cnt.textContent = allFonts.length ? `${allFonts.length} disponíveis` : 'nenhuma detectada';
+    cnt.textContent = allFonts.length ? `${allFonts.length} available` : 'none detected';
     fontInput.disabled = false;
-    fontInput.placeholder = allFonts.length ? 'Buscar fonte instalada…' : 'Digite o nome da fonte…';
+    fontInput.placeholder = allFonts.length ? 'Search installed font…' : 'Type font name…';
     return;
   }
 
@@ -221,8 +221,8 @@ window.onmessage = e => {
 
   if (m.type === 'DONE') {
     document.getElementById('pb').style.width = '100%';
-    document.getElementById('pt').textContent = 'Concluído!';
-    setMsg('ok', '✅ ' + m.count + ' frames + estilos Figma criados!');
+    document.getElementById('pt').textContent = 'Done!';
+    setMsg('ok', '✅ ' + m.count + ' frames + Figma styles created!');
     document.getElementById('btn').disabled = false;
   }
 
