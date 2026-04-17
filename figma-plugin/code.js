@@ -171,7 +171,7 @@ async function mkHeader(parent, title, primary, d, ff) {
     lr.fills = [{ type: 'IMAGE', scaleMode: 'FIT', imageHash: lh }];
     header.appendChild(lr);
   } else {
-    header.appendChild(await mkT({ text: d.project?.name || 'Style Guide', size: 22, style: 'Bold', color: '#FFFFFF' }));
+    header.appendChild(await mkT({ text: (d.project && d.project.name) || 'Style Guide', size: 22, style: 'Bold', color: '#FFFFFF' }));
   }
 
   header.appendChild(await mkT({ text: title, size: 42, style: 'Bold', color: '#FFFFFF', align: 'RIGHT' }));
@@ -237,7 +237,7 @@ async function buildIntro(d, primary) {
 
   // Background
   let hasBg = false;
-  if (d.project?.background) {
+  if (d.project && d.project.background) {
     try {
       const bytes = decodeBase64(d.project.background.replace(/^data:[^;]+;base64,/, ''));
       if (bytes) {
@@ -259,14 +259,14 @@ async function buildIntro(d, primary) {
     lr.fills = [{ type: 'IMAGE', scaleMode: 'FIT', imageHash: lh }];
     f.appendChild(lr);
   } else {
-    const lt = await mkT({ text: d.project?.name || 'Logo', size: 26, style: 'Bold', color: '#FFFFFF' });
+    const lt = await mkT({ text: (d.project && d.project.name) || 'Logo', size: 26, style: 'Bold', color: '#FFFFFF' });
     lt.x = 80; lt.y = 56; f.appendChild(lt);
   }
 
   // Project name + tagline
-  const nameT = await mkT({ text: d.project?.name || 'Project Name', size: 96, style: 'Bold', color: '#FFFFFF', w: 1400, lh: 104 });
+  const nameT = await mkT({ text: (d.project && d.project.name) || 'Project Name', size: 96, style: 'Bold', color: '#FFFFFF', w: 1400, lh: 104 });
   nameT.x = 80; nameT.y = 620; f.appendChild(nameT);
-  if (d.project?.tagline) {
+  if (d.project && d.project.tagline) {
     const tagT = await mkT({ text: d.project.tagline, size: 36, color: 'rgba(255,255,255,0.85)', w: 1100, lh: 52 });
     tagT.x = 80; tagT.y = 840; f.appendChild(tagT);
   }
@@ -416,9 +416,9 @@ async function buildStyles(d, primary, ff) {
   const content = af({ name: 'Content', w: 1920, mode: 'VERTICAL', gap: 56, pl: 80, pr: 80, pt: 64, pb: 80 });
   content.fills = [];
 
-  const br = d.styles?.borderRadius || { S: 20, M: 32, L: 54 };
-  const st = d.styles?.stroke       || { S: 0.5, M: 1, L: 2 };
-  const ds = d.styles?.dropShadow   || { blur: 16, y: 4, x: 0, color: '#000000', opacity: 0.16 };
+  const br = (d.styles && d.styles.borderRadius) || { S: 20, M: 32, L: 54 };
+  const st = (d.styles && d.styles.stroke)       || { S: 0.5, M: 1, L: 2 };
+  const ds = (d.styles && d.styles.dropShadow)   || { blur: 16, y: 4, x: 0, color: '#000000', opacity: 0.16 };
 
   // ── Border Radius
   content.appendChild(await mkT({ text: 'Border Radius', size: 30, style: 'Bold', w: 1760 }));
@@ -587,7 +587,7 @@ async function buildButtons(d, primary, ff) {
   const content = af({ name: 'Content', w: 1920, mode: 'VERTICAL', gap: 0, pl: 80, pr: 80, pt: 64, pb: 80 });
   content.fills = [];
 
-  const brM = (d.styles?.borderRadius?.M) || 12;
+  const brM = (d.styles && d.styles.borderRadius && d.styles.borderRadius.M) || 12;
 
   const sections = [
     { label: 'Primary',   info: 'Ação principal do sistema' },
