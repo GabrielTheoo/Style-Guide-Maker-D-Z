@@ -1,9 +1,20 @@
 // Style Guide Maker — D&Z  |  Figma Plugin
 // ─────────────────────────────────────────
 
-figma.showUI(__html__, { width: 380, height: 560, title: 'Style Guide Maker — D&Z' });
+figma.showUI(__html__, { width: 400, height: 660, title: 'Style Guide Maker — D&Z' });
 
-// ── HELPERS ──────────────────────────────────────
+// ── FONTS: detect installed fonts on startup ──────
+(async () => {
+  try {
+    const fonts = await figma.listAvailableFontsAsync();
+    const families = [...new Set(fonts.map(f => f.fontName.family))].sort();
+    figma.ui.postMessage({ type: 'FONTS_LOADED', fonts: families });
+  } catch (_) {
+    figma.ui.postMessage({ type: 'FONTS_LOADED', fonts: [] });
+  }
+})();
+
+// ── HELPERS ───────────────────────────────────────
 
 function hexToRGB(hex) {
   hex = (hex || '#000000').replace('#', '');
@@ -15,10 +26,10 @@ function hexToRGB(hex) {
   };
 }
 
-function fill(hex, opacity) {
+function fill(hex, a) {
   const c = hexToRGB(hex);
   const p = { type: 'SOLID', color: c };
-  if (opacity !== undefined) p.opacity = opacity;
+  if (a !== undefined) p.opacity = a;
   return [p];
 }
 
@@ -26,82 +37,196 @@ function prog(text, pct, dot) {
   figma.ui.postMessage({ type: 'PROGRESS', text, pct, dot: dot || null });
 }
 
-// Decode base64 image — tries figma.base64Decode first, falls back to manual
 function decodeBase64(b64) {
   try {
-    // Native Figma API (preferred)
-    if (typeof figma.base64Decode === 'function') {
-      return figma.base64Decode(b64);
-    }
-    // Manual fallback
+    if (typeof figma.base64Decode === 'function') return figma.base64Decode(b64);
     const bin = atob(b64);
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     return bytes;
-  } catch (_) {
-    return null;
-  }
+  } catch (_) { return null; }
 }
 
-// Load a font; always fall back to Inter if unavailable
 async function loadF(family, style) {
+  const fallbackStyle = /bold/i.test(style) ? 'Bold'
+    : /semi/i.test(style) ? 'SemiBold'
+    : /medium/i.test(style) ? 'Medium'
+    : /light/i.test(style) ? 'Light'
+    : /italic/i.test(style) ? 'Italic'
+    : 'Regular';
   try {
     await figma.loadFontAsync({ family, style });
     return { family, style };
   } catch (_) {
-    const fallbackStyle = /bold/i.test(style) ? 'Bold'
-      : /semi/i.test(style) ? 'SemiBold'
-      : /medium/i.test(style) ? 'Medium'
-      : 'Regular';
     try {
-      await figma.loadFontAsync({ family: 'Inter', style: fallbackStyle });
-      return { family: 'Inter', style: fallbackStyle };
+      await figma.loadFontAsync({ family, style: fallbackStyle });
+      return { family, style: fallbackStyle };
     } catch (_) {
-      await figma.loadFontAsync({ family: 'Inter', style: 'Regular' });
-      return { family: 'Inter', style: 'Regular' };
+      try {
+        await figma.loadFontAsync({ family, style: 'Regular' });
+        return { family, style: 'Regular' };
+      } catch (_) {
+        await figma.loadFontAsync({ family: 'Inter', style: 'Regular' });
+        return { family: 'Inter', style: 'Regular' };
+      }
     }
   }
 }
 
-// Create a text node (always loads font first)
-async function mkText({ text, x, y, size = 16, family = 'Inter', style = 'Regular', color = '#000000', w, lh }) {
-  const fontName = await loadF(family, style);
-  const node = figma.createText();
-  node.fontName = fontName;
-  node.fontSize = size;
-  node.fills = fill(color);
-  if (lh) node.lineHeight = { value: lh, unit: 'PIXELS' };
-  node.characters = String(text || '');
-  node.x = x; node.y = y;
-  if (w) { node.textAutoResize = 'HEIGHT'; node.resize(w, 40); }
-  return node;
+function isLight(hex) {
+  const c = hexToRGB(hex || '#000000');
+  return (c.r * 0.299 + c.g * 0.587 + c.b * 0.114) > 0.65;
 }
 
-// Create a rectangle
-function mkRect(x, y, w, h, hexFill, radius, strokeHex, strokeW) {
-  const node = figma.createRectangle();
-  node.x = x; node.y = y; node.resize(w, h);
-  node.fills = hexFill ? fill(hexFill) : [];
-  if (radius) node.cornerRadius = radius;
-  if (strokeHex) {
-    node.strokes = fill(strokeHex);
-    node.strokeWeight = strokeW || 1;
-    node.strokeAlign = 'INSIDE';
+// ── AUTO-LAYOUT FRAME FACTORY ─────────────────────
+// mode: 'VERTICAL' | 'HORIZONTAL' | null
+// For VERTICAL: width is fixed, height is auto
+// For HORIZONTAL: both dimensions auto unless overridden
+function af({ name = 'Frame', w, h, mode, gap = 0, pl = 0, pr, pt = 0, pb, bg, r, clip = false } = {}) {
+  const f = figma.createFrame();
+  f.name = name;
+  f.clipsContent = clip;
+  if (mode) {
+    f.layoutMode = mode;
+    f.primaryAxisSizingMode = 'AUTO';
+    f.counterAxisSizingMode = mode === 'VERTICAL' ? 'FIXED' : 'AUTO';
+    if (mode === 'VERTICAL' && w) f.resize(w, h || 100);
+    if (mode === 'HORIZONTAL' && w) { f.counterAxisSizingMode = 'FIXED'; f.resize(w, h || 100); }
+  } else {
+    if (w && h) f.resize(w, h);
+    else if (w) f.resize(w, 100);
   }
-  return node;
+  f.itemSpacing = gap;
+  f.paddingLeft = pl;
+  f.paddingRight = pr !== undefined ? pr : pl;
+  f.paddingTop = pt;
+  f.paddingBottom = pb !== undefined ? pb : pt;
+  f.fills = bg ? fill(bg) : [];
+  if (r !== undefined) f.cornerRadius = r;
+  return f;
 }
 
-// Add a full-width header bar (blue, with "Style Guide" + frame title)
-async function mkHeader(frame, title, primary) {
-  frame.appendChild(mkRect(0, 0, 1920, 140, primary));
-  frame.appendChild(await mkText({ text: 'Style Guide', x: 80, y: 48, size: 32, style: 'Bold', color: '#FFFFFF' }));
-  const t = await mkText({ text: title, x: 0, y: 44, size: 44, style: 'Bold', color: '#FFFFFF', w: 1920 });
-  t.textAlignHorizontal = 'RIGHT';
-  t.x = 0; t.resize(1840, 52);
-  frame.appendChild(t);
+// Create rect (no x/y — positions via auto layout or set manually)
+function mkR(w, h, bg, r, strokeHex, strokeW) {
+  const n = figma.createRectangle();
+  n.resize(w, h);
+  n.fills = bg ? fill(bg) : [];
+  if (r !== undefined) n.cornerRadius = r;
+  if (strokeHex) {
+    n.strokes = fill(strokeHex);
+    n.strokeWeight = strokeW || 1;
+    n.strokeAlign = 'INSIDE';
+  }
+  return n;
 }
 
-function sep(frame, y) { frame.appendChild(mkRect(80, y, 1760, 1, '#eeeeee')); }
+// Text node for auto-layout
+async function mkT({ text = '', size = 16, family = 'Inter', style = 'Regular', color = '#111111', w, lh, align } = {}) {
+  const fn = await loadF(family, style);
+  const n = figma.createText();
+  n.fontName = fn;
+  n.fontSize = size;
+  n.fills = fill(color);
+  if (lh) n.lineHeight = { value: lh, unit: 'PIXELS' };
+  if (align) n.textAlignHorizontal = align;
+  if (w) { n.textAutoResize = 'HEIGHT'; n.resize(w, 100); }
+  else n.textAutoResize = 'WIDTH_AND_HEIGHT';
+  n.characters = String(text);
+  return n;
+}
+
+// Invisible spacer for breathing room in auto layout
+function sp(h, w = 1) {
+  const n = figma.createRectangle();
+  n.name = '_sp'; n.resize(w, h);
+  n.fills = []; n.opacity = 0;
+  return n;
+}
+
+// ── LOGO (cached) ─────────────────────────────────
+let _logoHash = null;
+async function logoHash(d) {
+  if (_logoHash) return _logoHash;
+  if (d.project && d.project.logo) {
+    try {
+      const bytes = decodeBase64(d.project.logo.replace(/^data:[^;]+;base64,/, ''));
+      if (bytes) { _logoHash = figma.createImage(bytes).hash; return _logoHash; }
+    } catch (_) {}
+  }
+  return null;
+}
+
+// ── HEADER BAR ────────────────────────────────────
+async function mkHeader(parent, title, primary, d, ff) {
+  const header = af({ name: 'Header', w: 1920, h: 140, mode: 'HORIZONTAL', pl: 80, pr: 80, bg: primary });
+  header.primaryAxisSizingMode = 'FIXED';
+  header.counterAxisSizingMode = 'FIXED';
+  header.primaryAxisAlignItems = 'SPACE_BETWEEN';
+  header.counterAxisAlignItems = 'CENTER';
+
+  const lh = await logoHash(d);
+  if (lh) {
+    const lr = mkR(180, 68, null);
+    lr.name = 'Logo';
+    lr.fills = [{ type: 'IMAGE', scaleMode: 'FIT', imageHash: lh }];
+    header.appendChild(lr);
+  } else {
+    header.appendChild(await mkT({ text: d.project?.name || 'Style Guide', size: 22, style: 'Bold', color: '#FFFFFF' }));
+  }
+
+  header.appendChild(await mkT({ text: title, size: 42, style: 'Bold', color: '#FFFFFF', align: 'RIGHT' }));
+  parent.appendChild(header);
+}
+
+// Section divider line
+function divider(w = 1760) { return mkR(w, 1, '#EEEEEE'); }
+
+// ── CREATE FIGMA STYLES ───────────────────────────
+async function createFigmaStyles(d, ff) {
+  // ── Text styles under "Textos/"
+  const textSpecs = [
+    { name: 'Textos/H1',      size: 52, style: 'Bold',     lh: 68 },
+    { name: 'Textos/H2',      size: 44, style: 'Bold',     lh: 56 },
+    { name: 'Textos/H3',      size: 36, style: 'Regular',  lh: 44 },
+    { name: 'Textos/H4',      size: 28, style: 'Bold',     lh: 36 },
+    { name: 'Textos/H5',      size: 22, style: 'Bold',     lh: 28 },
+    { name: 'Textos/H6',      size: 20, style: 'Regular',  lh: 24 },
+    { name: 'Textos/Body L',  size: 20, style: 'Regular',  lh: 32 },
+    { name: 'Textos/Body M',  size: 18, style: 'Regular',  lh: 28 },
+    { name: 'Textos/Body S',  size: 16, style: 'Regular',  lh: 24 },
+    { name: 'Textos/Button',  size: 16, style: 'SemiBold', lh: 20 },
+    { name: 'Textos/Label',   size: 16, style: 'Medium',   lh: 24 },
+    { name: 'Textos/Caption', size: 12, style: 'Regular',  lh: 18 },
+  ];
+  for (const s of textSpecs) {
+    try {
+      const fn = await loadF(ff, s.style);
+      const ts = figma.createTextStyle();
+      ts.name = s.name; ts.fontName = fn; ts.fontSize = s.size;
+      if (s.lh) ts.lineHeight = { value: s.lh, unit: 'PIXELS' };
+    } catch (_) {}
+  }
+
+  // ── Color styles under "Cores/{ColorName}/"
+  const shadeNames = ['Light', 'Light Hover', 'Light Active', 'Normal', 'Normal Hover', 'Normal Active', 'Dark', 'Dark Hover', 'Dark Active', 'Darker'];
+  for (const c of (d.colors || [])) {
+    try {
+      const ps = figma.createPaintStyle();
+      ps.name = `Cores/${c.name}/Base`;
+      ps.paints = fill(c.hex);
+    } catch (_) {}
+    if (c.shades) {
+      const vals = Object.values(c.shades);
+      for (let i = 0; i < Math.min(vals.length, shadeNames.length); i++) {
+        try {
+          const ps = figma.createPaintStyle();
+          ps.name = `Cores/${c.name}/${shadeNames[i]}`;
+          ps.paints = fill(vals[i]);
+        } catch (_) {}
+      }
+    }
+  }
+}
 
 // ── FRAME 1 — PROJECT INTRODUCTION ───────────────
 async function buildIntro(d, primary) {
@@ -112,443 +237,549 @@ async function buildIntro(d, primary) {
 
   // Background
   let hasBg = false;
-  if (d.project && d.project.background) {
+  if (d.project?.background) {
     try {
-      const b64 = d.project.background.replace(/^data:[^;]+;base64,/, '');
-      const bytes = decodeBase64(b64);
+      const bytes = decodeBase64(d.project.background.replace(/^data:[^;]+;base64,/, ''));
       if (bytes) {
-        const img = figma.createImage(bytes);
-        const bg = mkRect(0, 0, 1920, 1080, null);
-        bg.fills = [{ type: 'IMAGE', scaleMode: 'FILL', imageHash: img.hash }];
+        const bg = mkR(1920, 1080, null);
+        bg.fills = [{ type: 'IMAGE', scaleMode: 'FILL', imageHash: figma.createImage(bytes).hash }];
         f.appendChild(bg); hasBg = true;
       }
     } catch (_) {}
   }
-  if (!hasBg) { f.appendChild(mkRect(0, 0, 1920, 1080, primary)); }
+  if (!hasBg) { const bg = mkR(1920, 1080, primary); f.appendChild(bg); }
 
-  // Dark overlay
-  const ov = mkRect(0, 0, 1920, 1080, '#000000');
-  ov.opacity = 0.45; f.appendChild(ov);
+  // Overlay
+  const ov = mkR(1920, 1080, '#000000'); ov.opacity = 0.45; f.appendChild(ov);
 
-  // Logo
-  if (d.project && d.project.logo) {
-    try {
-      const b64 = d.project.logo.replace(/^data:[^;]+;base64,/, '');
-      const bytes = decodeBase64(b64);
-      if (bytes) {
-        const img = figma.createImage(bytes);
-        const lr = mkRect(80, 40, 300, 80, null);
-        lr.fills = [{ type: 'IMAGE', scaleMode: 'FIT', imageHash: img.hash }];
-        f.appendChild(lr);
-      }
-    } catch (_) {
-      f.appendChild(await mkText({ text: d.project.name || 'Logo', x: 80, y: 52, size: 28, style: 'Bold', color: '#FFFFFF' }));
-    }
+  // Logo top-left
+  const lh = await logoHash(d);
+  if (lh) {
+    const lr = mkR(300, 88, null); lr.x = 80; lr.y = 44;
+    lr.fills = [{ type: 'IMAGE', scaleMode: 'FIT', imageHash: lh }];
+    f.appendChild(lr);
+  } else {
+    const lt = await mkT({ text: d.project?.name || 'Logo', size: 26, style: 'Bold', color: '#FFFFFF' });
+    lt.x = 80; lt.y = 56; f.appendChild(lt);
   }
 
-  const projName = (d.project && d.project.name) || 'Project Name';
-  const tagline  = (d.project && d.project.tagline) || '';
-  f.appendChild(await mkText({ text: projName, x: 80, y: 660, size: 96, style: 'Bold', color: '#FFFFFF', w: 1400 }));
-  if (tagline) f.appendChild(await mkText({ text: tagline, x: 80, y: 800, size: 36, color: '#FFFFFF', w: 1000, lh: 52 }));
-
+  // Project name + tagline
+  const nameT = await mkT({ text: d.project?.name || 'Project Name', size: 96, style: 'Bold', color: '#FFFFFF', w: 1400, lh: 104 });
+  nameT.x = 80; nameT.y = 620; f.appendChild(nameT);
+  if (d.project?.tagline) {
+    const tagT = await mkT({ text: d.project.tagline, size: 36, color: 'rgba(255,255,255,0.85)', w: 1100, lh: 52 });
+    tagT.x = 80; tagT.y = 840; f.appendChild(tagT);
+  }
   return f;
 }
 
 // ── FRAME 2 — FONT WEIGHT ─────────────────────────
-async function buildFontWeight(d, primary) {
-  // Support both 'font' and 'primaryFont' keys
-  const fontFamily = (d.typography && (d.typography.font || d.typography.primaryFont)) || 'Inter';
+async function buildFontWeight(d, primary, ff) {
+  const f = af({ name: 'Font Weight', w: 1920, mode: 'VERTICAL', bg: '#FFFFFF' });
+  await mkHeader(f, 'Font Weight', primary, d, ff);
 
-  const f = figma.createFrame();
-  f.name = 'Font Weight';
-  f.resize(1920, 1323);
-  f.fills = fill('#FFFFFF');
-  f.clipsContent = true;
-  await mkHeader(f, 'Font Weight', primary);
+  const content = af({ name: 'Content', w: 1920, mode: 'VERTICAL', gap: 48, pl: 80, pr: 80, pt: 64, pb: 80 });
+  content.fills = [];
 
-  f.appendChild(await mkText({ text: 'Font Weight', x: 80, y: 190, size: 40, style: 'Bold' }));
-  f.appendChild(await mkText({ text: fontFamily, x: 80, y: 248, size: 20, color: '#59595B' }));
+  // Font family name large
+  const fn = await loadF(ff, 'Bold');
+  const bigName = figma.createText();
+  bigName.fontName = fn; bigName.fontSize = 80;
+  bigName.fills = fill('#111111');
+  bigName.textAutoResize = 'WIDTH_AND_HEIGHT';
+  bigName.characters = ff;
+  content.appendChild(bigName);
 
+  content.appendChild(await mkT({ text: 'Família tipográfica', size: 16, color: '#999999' }));
+  content.appendChild(sp(8, 1760));
+
+  // Weight grid — 3 columns × 3 rows
   const weights = [
-    ['Thin',       'Thin',      '100'],
-    ['Extra Light','ExtraLight','200'],
-    ['Light',      'Light',     '300'],
-    ['Regular',    'Regular',   '400'],
-    ['Medium',     'Medium',    '500'],
-    ['Semi Bold',  'SemiBold',  '600'],
-    ['Bold',       'Bold',      '700'],
-    ['Extra Bold', 'ExtraBold', '800'],
-    ['Black',      'Black',     '900'],
+    { label: 'Thin',       style: 'Thin',       num: '100' },
+    { label: 'ExtraLight', style: 'ExtraLight',  num: '200' },
+    { label: 'Light',      style: 'Light',       num: '300' },
+    { label: 'Regular',    style: 'Regular',     num: '400' },
+    { label: 'Medium',     style: 'Medium',      num: '500' },
+    { label: 'SemiBold',   style: 'SemiBold',    num: '600' },
+    { label: 'Bold',       style: 'Bold',        num: '700' },
+    { label: 'ExtraBold',  style: 'ExtraBold',   num: '800' },
+    { label: 'Black',      style: 'Black',       num: '900' },
   ];
 
-  let y = 320;
-  for (const [label, style, weight] of weights) {
-    const fontName = await loadF(fontFamily, style);
-    const t = figma.createText();
-    t.fontName = fontName;
-    t.fontSize = 44;
-    t.fills = fill('#000000');
-    t.characters = `${label} — Aa Bb Cc 0123`;
-    t.x = 80; t.y = y;
-    f.appendChild(t);
-    f.appendChild(await mkText({ text: weight, x: 1800, y: y + 14, size: 16, color: '#aaaaaa' }));
-    sep(f, y + 56);
-    y += 94;
+  for (let r = 0; r < 3; r++) {
+    const row = af({ name: `Row ${r + 1}`, mode: 'HORIZONTAL', gap: 24 });
+    row.fills = [];
+
+    for (let c = 0; c < 3; c++) {
+      const w = weights[r * 3 + c];
+      const card = af({ name: w.label, w: 565, mode: 'VERTICAL', gap: 12, pl: 28, pr: 28, pt: 24, pb: 24, bg: '#F8F9FA', r: 12 });
+      card.clipsContent = false;
+
+      // Top row: label + weight number
+      const topRow = af({ name: 'LabelRow', mode: 'HORIZONTAL', gap: 0 });
+      topRow.fills = []; topRow.primaryAxisAlignItems = 'SPACE_BETWEEN'; topRow.counterAxisAlignItems = 'CENTER';
+      topRow.counterAxisSizingMode = 'AUTO';
+      topRow.appendChild(await mkT({ text: w.label, size: 14, style: 'Medium', color: '#666666' }));
+      topRow.appendChild(await mkT({ text: w.num, size: 14, color: '#BBBBBB' }));
+      card.appendChild(topRow);
+
+      // "Aa" display
+      const aFont = await loadF(ff, w.style);
+      const aa = figma.createText();
+      aa.fontName = aFont; aa.fontSize = 64;
+      aa.fills = fill('#111111');
+      aa.textAutoResize = 'WIDTH_AND_HEIGHT';
+      aa.characters = 'Aa';
+      card.appendChild(aa);
+
+      // Alphabet sample
+      const alphaNode = figma.createText();
+      alphaNode.fontName = aFont; alphaNode.fontSize = 13;
+      alphaNode.fills = fill('#777777');
+      alphaNode.textAutoResize = 'HEIGHT'; alphaNode.resize(509, 40);
+      alphaNode.characters = 'Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp';
+      card.appendChild(alphaNode);
+
+      row.appendChild(card);
+    }
+    content.appendChild(row);
   }
+
+  f.appendChild(content);
   return f;
 }
 
-// ── FRAME 3 — FONT SIZES ─────────────────────────
-async function buildFontSizes(d, primary) {
-  const fontFamily = (d.typography && (d.typography.font || d.typography.primaryFont)) || 'Inter';
-  const f = figma.createFrame();
-  f.name = 'Font Sizes';
-  f.resize(1920, 4644);
-  f.fills = fill('#FFFFFF');
-  f.clipsContent = true;
-  await mkHeader(f, 'Font Sizes', primary);
+// ── FRAME 3 — FONT SIZES ──────────────────────────
+async function buildFontSizes(d, primary, ff) {
+  const f = af({ name: 'Font Sizes', w: 1920, mode: 'VERTICAL', bg: '#FFFFFF' });
+  await mkHeader(f, 'Font Sizes', primary, d, ff);
+
+  const content = af({ name: 'Content', w: 1920, mode: 'VERTICAL', gap: 0, pl: 80, pr: 80, pt: 64, pb: 80 });
+  content.fills = [];
 
   const lorem = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer tristique orci est.';
-  const hSpecs = [
+
+  async function addSection(title, specs) {
+    content.appendChild(await mkT({ text: title, size: 30, style: 'Bold', w: 1760 }));
+    content.appendChild(sp(20, 1760));
+    for (const h of specs) {
+      const fn = await loadF(ff, h.style);
+
+      // Row: sample | spec
+      const row = af({ name: `${h.label} Row`, mode: 'HORIZONTAL', gap: 0 });
+      row.fills = []; row.primaryAxisAlignItems = 'SPACE_BETWEEN'; row.counterAxisAlignItems = 'CENTER';
+
+      const t = figma.createText();
+      t.fontName = fn; t.fontSize = h.size;
+      t.lineHeight = { value: h.lh, unit: 'PIXELS' };
+      t.fills = fill('#111111');
+      t.textAutoResize = 'HEIGHT'; t.resize(1380, 100);
+      t.characters = `${h.label} — ${lorem.slice(0, h.size > 30 ? 30 : 55)}`;
+      row.appendChild(t);
+
+      row.appendChild(await mkT({ text: `${h.size}px · ${h.style}`, size: 13, color: '#AAAAAA', align: 'RIGHT' }));
+      content.appendChild(row);
+      content.appendChild(divider(1760));
+      content.appendChild(sp(20, 1760));
+    }
+    content.appendChild(sp(32, 1760));
+  }
+
+  await addSection('Headers', [
     { label: 'H1', size: 52, style: 'Bold',    lh: 68 },
     { label: 'H2', size: 44, style: 'Bold',    lh: 56 },
     { label: 'H3', size: 36, style: 'Regular', lh: 44 },
     { label: 'H4', size: 28, style: 'Bold',    lh: 36 },
     { label: 'H5', size: 22, style: 'Bold',    lh: 28 },
     { label: 'H6', size: 20, style: 'Regular', lh: 24 },
-  ];
-  const bSpecs = [
+  ]);
+  await addSection('Body', [
     { label: 'Body L', size: 20, style: 'Regular', lh: 32 },
     { label: 'Body M', size: 18, style: 'Regular', lh: 28 },
     { label: 'Body S', size: 16, style: 'Regular', lh: 24 },
-  ];
-  const btnSpecs = [
-    { label: 'Button', size: 16, style: 'SemiBold', lh: 20 },
-    { label: 'Label',  size: 16, style: 'Medium',   lh: 24 },
-  ];
+  ]);
+  await addSection('Buttons & Labels', [
+    { label: 'Button',  size: 16, style: 'SemiBold', lh: 20 },
+    { label: 'Label',   size: 16, style: 'Medium',   lh: 24 },
+    { label: 'Caption', size: 12, style: 'Regular',  lh: 18 },
+  ]);
 
-  let y = 190;
-  f.appendChild(await mkText({ text: 'Headers', x: 80, y, size: 40, style: 'Bold' })); y += 72;
-  for (const h of hSpecs) {
-    const fn = await loadF(fontFamily, h.style);
-    const t = figma.createText();
-    t.fontName = fn; t.fontSize = h.size;
-    t.lineHeight = { value: h.lh, unit: 'PIXELS' };
-    t.fills = fill('#000000');
-    t.characters = `${h.label} — ${lorem.slice(0, 38)}`;
-    t.x = 80; t.y = y; f.appendChild(t);
-    f.appendChild(await mkText({ text: `${h.size}px · ${h.style}`, x: 1700, y: y + 4, size: 14, color: '#999999' }));
-    sep(f, y + h.lh + 14); y += h.lh + 56;
-  }
-
-  y += 40;
-  f.appendChild(await mkText({ text: 'Body', x: 80, y, size: 40, style: 'Bold' })); y += 72;
-  for (const b of bSpecs) {
-    const fn = await loadF(fontFamily, b.style);
-    const t = figma.createText();
-    t.fontName = fn; t.fontSize = b.size;
-    t.lineHeight = { value: b.lh, unit: 'PIXELS' };
-    t.textAutoResize = 'HEIGHT'; t.resize(1400, 200);
-    t.fills = fill('#000000');
-    t.characters = `${b.label} — ${lorem}`;
-    t.x = 80; t.y = y; f.appendChild(t);
-    f.appendChild(await mkText({ text: `${b.size}px · ${b.style}`, x: 1700, y: y + 4, size: 14, color: '#999999' }));
-    y += b.lh * 3 + 64;
-  }
-
-  y += 40;
-  f.appendChild(await mkText({ text: 'Text for Buttons and Links', x: 80, y, size: 40, style: 'Bold' })); y += 72;
-  for (const b of btnSpecs) {
-    const fn = await loadF(fontFamily, b.style);
-    const t = figma.createText();
-    t.fontName = fn; t.fontSize = b.size;
-    t.lineHeight = { value: b.lh, unit: 'PIXELS' };
-    t.fills = fill('#000000'); t.characters = b.label;
-    t.x = 80; t.y = y; f.appendChild(t); y += 72;
-  }
+  f.appendChild(content);
   return f;
 }
 
-// ── FRAME 4 — STYLES ─────────────────────────────
-async function buildStyles(d, primary) {
-  const f = figma.createFrame();
-  f.name = 'Styles';
-  f.resize(1920, 1996);
-  f.fills = fill('#FFFFFF');
-  f.clipsContent = true;
-  await mkHeader(f, 'Styles', primary);
+// ── FRAME 4 — STYLES ──────────────────────────────
+async function buildStyles(d, primary, ff) {
+  const f = af({ name: 'Styles', w: 1920, mode: 'VERTICAL', bg: '#FFFFFF' });
+  await mkHeader(f, 'Styles', primary, d, ff);
 
-  const br = (d.styles && d.styles.borderRadius) || { S: 20, M: 32, L: 54 };
-  const st = (d.styles && d.styles.stroke)       || { S: 0.5, M: 1, L: 2 };
-  const ds = (d.styles && d.styles.dropShadow)   || { blur: 16, y: 4, x: 0, color: '#000000', opacity: 0.16 };
+  const content = af({ name: 'Content', w: 1920, mode: 'VERTICAL', gap: 56, pl: 80, pr: 80, pt: 64, pb: 80 });
+  content.fills = [];
 
-  // Border Radius
-  f.appendChild(await mkText({ text: 'Border Radius', x: 80, y: 200, size: 36, style: 'Bold' }));
-  for (const [i, [key, val]] of [['S', br.S], ['M', br.M], ['L', br.L]].entries()) {
-    const x = 80 + i * 300;
-    f.appendChild(mkRect(x, 284, 200, 200, '#f5f6f7', val, '#000000', 1));
-    f.appendChild(await mkText({ text: `Border Radius ${key}\n${val}px`, x, y: 502, size: 18 }));
+  const br = d.styles?.borderRadius || { S: 20, M: 32, L: 54 };
+  const st = d.styles?.stroke       || { S: 0.5, M: 1, L: 2 };
+  const ds = d.styles?.dropShadow   || { blur: 16, y: 4, x: 0, color: '#000000', opacity: 0.16 };
+
+  // ── Border Radius
+  content.appendChild(await mkT({ text: 'Border Radius', size: 30, style: 'Bold', w: 1760 }));
+  const brRow = af({ name: 'BR Row', mode: 'HORIZONTAL', gap: 32 }); brRow.fills = [];
+  for (const [key, val] of [['S', br.S], ['M', br.M], ['L', br.L]]) {
+    const card = af({ name: `BR ${key}`, mode: 'VERTICAL', gap: 16, pl: 0, pt: 0, bg: null });
+    card.fills = [];
+    card.appendChild(mkR(200, 200, '#F0F2F4', Number(val) || 0, '#E2E8F0', 1));
+    card.appendChild(await mkT({ text: `Radius ${key}  ·  ${val}px`, size: 16, color: '#444444' }));
+    brRow.appendChild(card);
   }
+  content.appendChild(brRow);
 
-  // Stroke
-  f.appendChild(await mkText({ text: 'Stroke', x: 80, y: 620, size: 36, style: 'Bold' }));
-  for (const [i, [key, val]] of [['S', st.S], ['M', st.M], ['L', st.L]].entries()) {
-    const x = 80 + i * 300;
-    f.appendChild(mkRect(x, 704, 200, 200, null, 12, '#000000', val));
-    f.appendChild(await mkText({ text: `Stroke ${key}\n${val}px`, x, y: 922, size: 18 }));
+  // ── Stroke
+  content.appendChild(divider(1760));
+  content.appendChild(await mkT({ text: 'Stroke', size: 30, style: 'Bold', w: 1760 }));
+  const stRow = af({ name: 'Stroke Row', mode: 'HORIZONTAL', gap: 32 }); stRow.fills = [];
+  for (const [key, val] of [['S', st.S], ['M', st.M], ['L', st.L]]) {
+    const card = af({ name: `St ${key}`, mode: 'VERTICAL', gap: 16, pt: 0, bg: null });
+    card.fills = [];
+    card.appendChild(mkR(200, 200, null, 12, '#111111', Number(val) || 1));
+    card.appendChild(await mkT({ text: `Stroke ${key}  ·  ${val}px`, size: 16, color: '#444444' }));
+    stRow.appendChild(card);
   }
+  content.appendChild(stRow);
 
-  // Drop Shadow
-  f.appendChild(await mkText({ text: 'Drop Shadow', x: 80, y: 1040, size: 36, style: 'Bold' }));
-  const shadowBox = mkRect(80, 1120, 200, 200, '#FFFFFF', 16);
+  // ── Drop Shadow
+  content.appendChild(divider(1760));
+  content.appendChild(await mkT({ text: 'Drop Shadow', size: 30, style: 'Bold', w: 1760 }));
+  const dsRow = af({ name: 'DS Row', mode: 'HORIZONTAL', gap: 48 }); dsRow.fills = [];
+  const shadowBox = mkR(200, 200, '#FFFFFF', 16);
   const sc = hexToRGB(ds.color || '#000000');
-  shadowBox.effects = [{
-    type: 'DROP_SHADOW',
-    color: { r: sc.r, g: sc.g, b: sc.b, a: ds.opacity || 0.16 },
-    offset: { x: ds.x || 0, y: ds.y || 4 },
-    radius: ds.blur || 16,
-    visible: true, blendMode: 'NORMAL', showShadowBehindNode: false,
-  }];
-  f.appendChild(shadowBox);
-  f.appendChild(await mkText({
-    text: `Drop Shadow M\nBlur: ${ds.blur}px  ·  Y: ${ds.y}px\nColor: ${ds.color}  ·  Opacity: ${Math.round((ds.opacity || 0.16) * 100)}%`,
-    x: 320, y: 1148, size: 18,
-  }));
+  shadowBox.effects = [{ type: 'DROP_SHADOW', color: { r: sc.r, g: sc.g, b: sc.b, a: ds.opacity || 0.16 }, offset: { x: ds.x || 0, y: ds.y || 4 }, radius: ds.blur || 16, visible: true, blendMode: 'NORMAL', showShadowBehindNode: false }];
+  const dsInfo = af({ name: 'DS Info', mode: 'VERTICAL', gap: 8, pt: 0, bg: null }); dsInfo.fills = [];
+  dsInfo.appendChild(shadowBox);
+  dsInfo.appendChild(await mkT({ text: `Drop Shadow\nBlur: ${ds.blur}px   Y: ${ds.y}px   X: ${ds.x}px\nOpacity: ${Math.round((ds.opacity || 0.16) * 100)}%`, size: 16, color: '#444444', lh: 26 }));
+  dsRow.appendChild(dsInfo);
+  content.appendChild(dsRow);
 
+  f.appendChild(content);
   return f;
 }
 
-// ── FRAME 5 — SPACING ────────────────────────────
-async function buildSpacing(d, primary) {
-  const f = figma.createFrame();
-  f.name = 'Spacing';
-  f.resize(1920, 1853);
-  f.fills = fill('#FFFFFF');
-  f.clipsContent = true;
-  await mkHeader(f, 'Spacing', primary);
+// ── FRAME 5 — SPACING ─────────────────────────────
+async function buildSpacing(d, primary, ff) {
+  const f = af({ name: 'Spacing', w: 1920, mode: 'VERTICAL', bg: '#FFFFFF' });
+  await mkHeader(f, 'Spacing', primary, d, ff);
+
+  const content = af({ name: 'Content', w: 1920, mode: 'VERTICAL', gap: 0, pl: 80, pr: 80, pt: 64, pb: 80 });
+  content.fills = [];
+
+  content.appendChild(await mkT({ text: 'Escala de Espaçamento', size: 30, style: 'Bold', w: 1760 }));
+  content.appendChild(sp(24, 1760));
 
   const spacings = [4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80, 96, 120, 160, 200, 240];
-  let y = 200;
   for (const s of spacings) {
-    f.appendChild(await mkText({ text: `${s}`, x: 80, y: y + 8, size: 14, color: '#999999' }));
-    const bar = mkRect(148, y, s * 4, 32, primary, 4);
-    bar.opacity = 0.75;
-    f.appendChild(bar);
-    f.appendChild(await mkText({ text: `${s}px`, x: 164 + s * 4, y: y + 8, size: 14, color: '#666666' }));
-    y += 72;
+    const row = af({ name: `${s}px`, mode: 'HORIZONTAL', gap: 20 });
+    row.fills = []; row.counterAxisAlignItems = 'CENTER';
+
+    const lbl = await mkT({ text: String(s), size: 13, color: '#999999', w: 48, align: 'RIGHT' });
+    row.appendChild(lbl);
+
+    const bar = mkR(Math.min(s * 4.5, 1400), 28, primary, 4);
+    bar.opacity = 0.85;
+    row.appendChild(bar);
+
+    row.appendChild(await mkT({ text: `${s}px`, size: 13, color: '#666666' }));
+    content.appendChild(row);
+    content.appendChild(sp(12, 1760));
   }
+
+  f.appendChild(content);
   return f;
 }
 
-// ── FRAME 6 — COLORS ─────────────────────────────
-async function buildColors(d, primary) {
-  const f = figma.createFrame();
-  f.name = 'Colors';
-  f.resize(1920, 2191);
-  f.fills = fill('#FFFFFF');
-  f.clipsContent = true;
-  await mkHeader(f, 'Colors', primary);
+// ── FRAME 6 — COLORS ──────────────────────────────
+async function buildColors(d, primary, ff) {
+  const f = af({ name: 'Colors', w: 1920, mode: 'VERTICAL', bg: '#FFFFFF' });
+  await mkHeader(f, 'Colors', primary, d, ff);
 
-  const colors = d.colors || [];
-  const shadeLabels = [
-    'Light', 'Light :hover', 'Light :active',
-    'Normal', 'Normal :hover', 'Normal :active',
-    'Dark', 'Dark :hover', 'Dark :active', 'Darker',
-  ];
+  const content = af({ name: 'Content', w: 1920, mode: 'VERTICAL', gap: 0, pl: 80, pr: 80, pt: 64, pb: 80 });
+  content.fills = [];
 
-  // Baseline circles
-  f.appendChild(await mkText({ text: 'Baseline Colors', x: 80, y: 190, size: 36, style: 'Bold' }));
-  for (const [i, c] of colors.slice(0, 7).entries()) {
-    const cx = 80 + i * 240;
+  const colors = (d.colors || []).slice(0, 8);
+  const shadeLabels = ['Light', 'Light :hover', 'Light :active', 'Normal', 'Normal :hover', 'Normal :active', 'Dark', 'Dark :hover', 'Dark :active', 'Darker'];
+
+  // ── Baseline circles
+  content.appendChild(await mkT({ text: 'Baseline Colors', size: 30, style: 'Bold', w: 1760 }));
+  content.appendChild(sp(24, 1760));
+
+  const circleRow = af({ name: 'Circles', mode: 'HORIZONTAL', gap: 28 });
+  circleRow.fills = []; circleRow.counterAxisSizingMode = 'AUTO';
+  for (const c of colors) {
+    const col = af({ name: c.name, w: 140, mode: 'VERTICAL', gap: 10, pt: 0 });
+    col.fills = []; col.counterAxisSizingMode = 'FIXED';
+
     const ell = figma.createEllipse();
-    ell.resize(131, 131); ell.x = cx; ell.y = 262;
+    ell.resize(120, 120);
     ell.fills = fill(c.hex);
     if ((c.hex || '').replace('#', '').toUpperCase() === 'FFFFFF') {
-      ell.strokes = fill('#dddddd'); ell.strokeWeight = 1;
+      ell.strokes = fill('#DDDDDD'); ell.strokeWeight = 1;
     }
-    f.appendChild(ell);
-    f.appendChild(await mkText({ text: c.name || '', x: cx, y: 410, size: 16, style: 'Bold' }));
-    f.appendChild(await mkText({ text: (c.hex || '').toUpperCase(), x: cx, y: 434, size: 14, color: '#59595B' }));
+    col.appendChild(ell);
+    col.appendChild(await mkT({ text: c.name || '', size: 14, style: 'SemiBold', w: 140 }));
+    col.appendChild(await mkT({ text: (c.hex || '').toUpperCase(), size: 13, color: '#777777', w: 140 }));
+    circleRow.appendChild(col);
+  }
+  content.appendChild(circleRow);
+  content.appendChild(sp(56, 1760));
+
+  // ── Color palettes — 4 per row
+  content.appendChild(await mkT({ text: 'Color Palette', size: 30, style: 'Bold', w: 1760 }));
+  content.appendChild(sp(24, 1760));
+
+  const cols = 4;
+  for (let ri = 0; ri < Math.ceil(colors.length / cols); ri++) {
+    const palRow = af({ name: `Palette Row ${ri + 1}`, mode: 'HORIZONTAL', gap: 24 });
+    palRow.fills = [];
+
+    for (let ci = 0; ci < cols; ci++) {
+      const idx = ri * cols + ci;
+      if (idx >= colors.length) break;
+      const c = colors[idx];
+      const shades = c.shades ? Object.values(c.shades) : [];
+
+      const card = af({ name: c.name, w: 404, mode: 'VERTICAL', gap: 0, bg: '#F8F9FA', r: 12, clip: true });
+      card.primaryAxisSizingMode = 'AUTO';
+
+      // Color header
+      const cHdr = af({ name: 'Color Header', w: 404, h: 84, mode: 'HORIZONTAL', pl: 18, pr: 18, bg: c.hex });
+      cHdr.primaryAxisSizingMode = 'FIXED'; cHdr.counterAxisSizingMode = 'FIXED';
+      cHdr.primaryAxisAlignItems = 'SPACE_BETWEEN'; cHdr.counterAxisAlignItems = 'CENTER';
+      const tc = isLight(c.hex) ? '#111111' : '#FFFFFF';
+      cHdr.appendChild(await mkT({ text: c.name || '', size: 18, style: 'Bold', color: tc }));
+      cHdr.appendChild(await mkT({ text: (c.hex || '').toUpperCase(), size: 13, color: tc, align: 'RIGHT' }));
+      card.appendChild(cHdr);
+
+      // Shades
+      const shCont = af({ name: 'Shades', w: 404, mode: 'VERTICAL', gap: 0, pl: 16, pr: 16, pt: 12, pb: 12, bg: '#FFFFFF' });
+      for (let si = 0; si < Math.min(shades.length, 10); si++) {
+        const sRow = af({ name: `Shade ${si}`, mode: 'HORIZONTAL', gap: 0, pt: 6, pb: 6 });
+        sRow.fills = []; sRow.primaryAxisAlignItems = 'SPACE_BETWEEN'; sRow.counterAxisAlignItems = 'CENTER';
+
+        const swatch = mkR(28, 28, shades[si], 6);
+        sRow.appendChild(swatch);
+        sRow.appendChild(await mkT({ text: shadeLabels[si] || '', size: 12, color: '#555555' }));
+        sRow.appendChild(await mkT({ text: (shades[si] || '').toUpperCase(), size: 12, color: '#AAAAAA', align: 'RIGHT' }));
+        shCont.appendChild(sRow);
+      }
+      card.appendChild(shCont);
+      palRow.appendChild(card);
+    }
+    content.appendChild(palRow);
+    content.appendChild(sp(24, 1760));
   }
 
-  // Shade palettes
-  f.appendChild(await mkText({ text: 'Color Palette', x: 80, y: 510, size: 36, style: 'Bold' }));
-  for (const [ci, c] of colors.slice(0, 7).entries()) {
-    const shades = c.shades ? Object.values(c.shades) : [];
-    const colsPerRow = 4;
-    const px = 80 + (ci % colsPerRow) * 450;
-    const py = 590 + Math.floor(ci / colsPerRow) * 720;
-    f.appendChild(await mkText({ text: c.name || '', x: px, y: py, size: 20, style: 'Bold' }));
-    for (const [si, hex] of shades.slice(0, 10).entries()) {
-      const sy = py + 44 + si * 56;
-      f.appendChild(mkRect(px, sy, 280, 48, hex, 4));
-      f.appendChild(await mkText({ text: shadeLabels[si] || '', x: px + 294, y: sy + 15, size: 13, color: '#59595B' }));
-    }
-  }
+  f.appendChild(content);
   return f;
 }
 
-// ── FRAME 7 — BUTTONS ────────────────────────────
-async function buildButtons(d, primary) {
-  const f = figma.createFrame();
-  f.name = 'Buttons';
-  f.resize(1920, 1626);
-  f.fills = fill('#FFFFFF');
-  f.clipsContent = true;
-  await mkHeader(f, 'Buttons', primary);
+// ── FRAME 7 — BUTTONS ─────────────────────────────
+async function buildButtons(d, primary, ff) {
+  const f = af({ name: 'Buttons', w: 1920, mode: 'VERTICAL', bg: '#FFFFFF' });
+  await mkHeader(f, 'Buttons', primary, d, ff);
 
-  const fontFamily = (d.typography && (d.typography.font || d.typography.primaryFont)) || 'Inter';
-  const br = (d.styles && d.styles.borderRadius && d.styles.borderRadius.M) || 12;
+  const content = af({ name: 'Content', w: 1920, mode: 'VERTICAL', gap: 0, pl: 80, pr: 80, pt: 64, pb: 80 });
+  content.fills = [];
 
-  for (const [si, sec] of [['Primary', 200], ['Secondary', 560], ['Link', 900]].entries()) {
-    const [label, baseY] = sec;
-    f.appendChild(await mkText({ text: label, x: 80, y: baseY, size: 40, style: 'Bold' }));
-    f.appendChild(await mkText({ text: 'For Light Backgrounds', x: 360, y: baseY + 56, size: 16, color: '#666666' }));
-    f.appendChild(await mkText({ text: 'For Dark Backgrounds',  x: 900, y: baseY + 56, size: 16, color: '#666666' }));
-    f.appendChild(mkRect(880, baseY + 88, 600, 200, '#383838', 8));
+  const brM = (d.styles?.borderRadius?.M) || 12;
 
-    if (label === 'Primary') {
-      f.appendChild(mkRect(360, baseY + 112, 240, 48, primary, br));
-      f.appendChild(await mkText({ text: 'This is a Button', x: 378, y: baseY + 126, size: 16, family: fontFamily, style: 'SemiBold', color: '#FFFFFF' }));
-      f.appendChild(mkRect(360, baseY + 188, 240, 48, '#FFFFFF', br, primary, 1.5));
-      f.appendChild(await mkText({ text: 'This is a Button', x: 378, y: baseY + 202, size: 16, family: fontFamily, style: 'SemiBold', color: primary }));
-      f.appendChild(mkRect(900, baseY + 112, 240, 48, primary, br));
-      f.appendChild(await mkText({ text: 'This is a Button', x: 918, y: baseY + 126, size: 16, family: fontFamily, style: 'SemiBold', color: '#FFFFFF' }));
-      f.appendChild(mkRect(900, baseY + 188, 240, 48, '#FFFFFF', br, primary, 1.5));
-      f.appendChild(await mkText({ text: 'This is a Button', x: 918, y: baseY + 202, size: 16, family: fontFamily, style: 'SemiBold', color: primary }));
+  const sections = [
+    { label: 'Primary',   info: 'Ação principal do sistema' },
+    { label: 'Secondary', info: 'Ação secundária / alternativa' },
+    { label: 'Link',      info: 'Ação de texto / link inline' },
+  ];
+
+  for (const sec of sections) {
+    content.appendChild(await mkT({ text: sec.label, size: 30, style: 'Bold', w: 1760 }));
+    content.appendChild(await mkT({ text: sec.info, size: 15, color: '#888888', w: 1760 }));
+    content.appendChild(sp(16, 1760));
+
+    const row = af({ name: `${sec.label} Variants`, mode: 'HORIZONTAL', gap: 40 });
+    row.fills = [];
+
+    // Light BG card
+    const light = af({ name: 'Light BG', w: 560, mode: 'VERTICAL', gap: 16, pl: 32, pr: 32, pt: 28, pb: 28, bg: '#FFFFFF', r: 14 });
+    light.strokes = fill('#E2E8F0'); light.strokeWeight = 1;
+    light.appendChild(await mkT({ text: 'Light Background', size: 11, style: 'Medium', color: '#AAAAAA' }));
+
+    // Dark BG card
+    const dark = af({ name: 'Dark BG', w: 560, mode: 'VERTICAL', gap: 16, pl: 32, pr: 32, pt: 28, pb: 28, bg: '#1E293B', r: 14 });
+    dark.appendChild(await mkT({ text: 'Dark Background', size: 11, style: 'Medium', color: 'rgba(255,255,255,0.4)' }));
+
+    if (sec.label === 'Primary') {
+      const btn1 = af({ name: 'Filled', mode: 'HORIZONTAL', pl: 24, pr: 24, pt: 13, pb: 13, bg: primary, r: brM });
+      btn1.counterAxisSizingMode = 'AUTO'; btn1.primaryAxisAlignItems = 'CENTER'; btn1.counterAxisAlignItems = 'CENTER';
+      btn1.appendChild(await mkT({ text: 'Primary Button', size: 16, family: ff, style: 'SemiBold', color: '#FFFFFF' }));
+
+      const btn2 = af({ name: 'Outline', mode: 'HORIZONTAL', pl: 24, pr: 24, pt: 13, pb: 13, r: brM });
+      btn2.counterAxisSizingMode = 'AUTO'; btn2.primaryAxisAlignItems = 'CENTER'; btn2.counterAxisAlignItems = 'CENTER';
+      btn2.strokes = fill(primary); btn2.strokeWeight = 1.5;
+      btn2.appendChild(await mkT({ text: 'Primary Button', size: 16, family: ff, style: 'SemiBold', color: primary }));
+
+      light.appendChild(btn1); light.appendChild(btn2);
+
+      const btn3 = af({ name: 'Filled Dark', mode: 'HORIZONTAL', pl: 24, pr: 24, pt: 13, pb: 13, bg: primary, r: brM });
+      btn3.counterAxisSizingMode = 'AUTO'; btn3.primaryAxisAlignItems = 'CENTER'; btn3.counterAxisAlignItems = 'CENTER';
+      btn3.appendChild(await mkT({ text: 'Primary Button', size: 16, family: ff, style: 'SemiBold', color: '#FFFFFF' }));
+
+      const btn4 = af({ name: 'Outline Dark', mode: 'HORIZONTAL', pl: 24, pr: 24, pt: 13, pb: 13, r: brM });
+      btn4.counterAxisSizingMode = 'AUTO'; btn4.primaryAxisAlignItems = 'CENTER'; btn4.counterAxisAlignItems = 'CENTER';
+      btn4.strokes = fill('#FFFFFF'); btn4.strokeWeight = 1.5;
+      btn4.appendChild(await mkT({ text: 'Primary Button', size: 16, family: ff, style: 'SemiBold', color: '#FFFFFF' }));
+
+      dark.appendChild(btn3); dark.appendChild(btn4);
+
+    } else if (sec.label === 'Secondary') {
+      const btn1 = af({ name: 'Outline', mode: 'HORIZONTAL', pl: 24, pr: 24, pt: 13, pb: 13, r: brM });
+      btn1.counterAxisSizingMode = 'AUTO'; btn1.primaryAxisAlignItems = 'CENTER'; btn1.counterAxisAlignItems = 'CENTER';
+      btn1.strokes = fill(primary); btn1.strokeWeight = 1.5;
+      btn1.appendChild(await mkT({ text: 'Secondary Button', size: 16, family: ff, style: 'SemiBold', color: primary }));
+
+      const btn2 = af({ name: 'Ghost', mode: 'HORIZONTAL', pl: 24, pr: 24, pt: 13, pb: 13, bg: '#FFFFFF', r: brM });
+      btn2.counterAxisSizingMode = 'AUTO'; btn2.primaryAxisAlignItems = 'CENTER'; btn2.counterAxisAlignItems = 'CENTER';
+      btn2.opacity = 0.15;
+      btn2.appendChild(await mkT({ text: 'Secondary Button', size: 16, family: ff, style: 'SemiBold', color: '#111111' }));
+
+      light.appendChild(btn1); light.appendChild(btn2);
+
+      const btn3 = af({ name: 'Outline Dark', mode: 'HORIZONTAL', pl: 24, pr: 24, pt: 13, pb: 13, r: brM });
+      btn3.counterAxisSizingMode = 'AUTO'; btn3.primaryAxisAlignItems = 'CENTER'; btn3.counterAxisAlignItems = 'CENTER';
+      btn3.strokes = fill('#FFFFFF'); btn3.strokeWeight = 1.5;
+      btn3.appendChild(await mkT({ text: 'Secondary Button', size: 16, family: ff, style: 'SemiBold', color: '#FFFFFF' }));
+
+      dark.appendChild(btn3);
+
+    } else { // Link
+      light.appendChild(await mkT({ text: 'Ver mais →', size: 16, family: ff, style: 'SemiBold', color: '#111111' }));
+      light.appendChild(await mkT({ text: 'Ver mais →', size: 16, family: ff, style: 'SemiBold', color: primary }));
+      dark.appendChild(await mkT({ text: 'Ver mais →', size: 16, family: ff, style: 'SemiBold', color: '#FFFFFF' }));
+      dark.appendChild(await mkT({ text: 'Ver mais →', size: 16, family: ff, style: 'SemiBold', color: primary }));
     }
-    if (label === 'Secondary') {
-      f.appendChild(mkRect(360, baseY + 112, 240, 48, '#FFFFFF', br, primary, 1.5));
-      f.appendChild(await mkText({ text: 'This is a Button', x: 378, y: baseY + 126, size: 16, family: fontFamily, style: 'SemiBold', color: primary }));
-      f.appendChild(mkRect(360, baseY + 188, 240, 48, primary, br));
-      f.appendChild(await mkText({ text: 'This is a Button', x: 378, y: baseY + 202, size: 16, family: fontFamily, style: 'SemiBold', color: '#FFFFFF' }));
-      f.appendChild(mkRect(900, baseY + 112, 240, 48, '#FFFFFF', br, primary, 1.5));
-      f.appendChild(await mkText({ text: 'This is a Button', x: 918, y: baseY + 126, size: 16, family: fontFamily, style: 'SemiBold', color: primary }));
-    }
-    if (label === 'Link') {
-      f.appendChild(await mkText({ text: 'See More →', x: 360, y: baseY + 126, size: 16, family: fontFamily, style: 'SemiBold', color: '#000000' }));
-      f.appendChild(await mkText({ text: 'See More →', x: 360, y: baseY + 178, size: 16, family: fontFamily, style: 'SemiBold', color: primary }));
-      f.appendChild(await mkText({ text: 'See More →', x: 900, y: baseY + 126, size: 16, family: fontFamily, style: 'SemiBold', color: '#FFFFFF' }));
-    }
+
+    row.appendChild(light); row.appendChild(dark);
+    content.appendChild(row);
+    content.appendChild(divider(1760));
+    content.appendChild(sp(48, 1760));
   }
+
+  f.appendChild(content);
   return f;
 }
 
-// ── FRAME 8 — IMAGES ─────────────────────────────
-async function buildImages(d, primary) {
+// ── FRAME 8 — IMAGES ──────────────────────────────
+async function buildImages(d, primary, ff) {
+  const f = af({ name: 'Images', w: 1920, mode: 'VERTICAL', bg: '#FFFFFF' });
+  await mkHeader(f, 'Images', primary, d, ff);
+
+  const content = af({ name: 'Content', w: 1920, mode: 'VERTICAL', gap: 0, pl: 80, pr: 80, pt: 64, pb: 80 });
+  content.fills = [];
+
   const images = d.images || [];
-  const rows = Math.max(Math.ceil(images.length / 3), 2);
-  const frameH = Math.max(220 + rows * 490, 3703);
-
-  const f = figma.createFrame();
-  f.name = 'Images';
-  f.resize(1920, frameH);
-  f.fills = fill('#FFFFFF');
-  f.clipsContent = true;
-  await mkHeader(f, 'Images', primary);
-
   if (images.length === 0) {
-    f.appendChild(await mkText({ text: 'Nenhuma imagem adicionada.', x: 80, y: 220, size: 24, color: '#cccccc' }));
-    return f;
+    content.appendChild(await mkT({ text: 'Nenhuma imagem adicionada.', size: 22, color: '#CCCCCC', w: 1760 }));
+    f.appendChild(content); return f;
   }
 
-  const imgW = 560, imgH = 420, gap = 40, sx = 80, sy = 220;
-  for (const [i, imgData] of images.entries()) {
-    const col = i % 3, row = Math.floor(i / 3);
-    const x = sx + col * (imgW + gap), y = sy + row * (imgH + gap);
+  content.appendChild(await mkT({ text: 'Imagens do Projeto', size: 30, style: 'Bold', w: 1760 }));
+  content.appendChild(sp(24, 1760));
 
-    let placed = false;
-    if (typeof imgData === 'string' && imgData.includes('base64,')) {
-      try {
-        const b64 = imgData.replace(/^data:[^;]+;base64,/, '');
-        const bytes = decodeBase64(b64);
-        if (bytes) {
-          const img = figma.createImage(bytes);
-          const r = mkRect(x, y, imgW, imgH, null, 8);
-          r.fills = [{ type: 'IMAGE', scaleMode: 'FILL', imageHash: img.hash }];
-          f.appendChild(r);
-          placed = true;
-        }
-      } catch (_) {}
+  const imgW = 558, imgH = 400, cols = 3;
+  for (let r = 0; r < Math.ceil(images.length / cols); r++) {
+    const rowF = af({ name: `Row ${r + 1}`, mode: 'HORIZONTAL', gap: 24 });
+    rowF.fills = [];
+
+    for (let c = 0; c < cols; c++) {
+      const i = r * cols + c;
+      if (i >= images.length) break;
+      const imgData = images[i];
+      let placed = false;
+
+      if (typeof imgData === 'string' && imgData.includes('base64,')) {
+        try {
+          const bytes = decodeBase64(imgData.replace(/^data:[^;]+;base64,/, ''));
+          if (bytes) {
+            const rect = mkR(imgW, imgH, null, 10);
+            rect.fills = [{ type: 'IMAGE', scaleMode: 'FILL', imageHash: figma.createImage(bytes).hash }];
+            rowF.appendChild(rect); placed = true;
+          }
+        } catch (_) {}
+      }
+      if (!placed) {
+        const ph = af({ name: `Img ${i + 1}`, w: imgW, h: imgH, mode: 'VERTICAL', bg: '#F0F0F0', r: 10 });
+        ph.primaryAxisSizingMode = 'FIXED'; ph.counterAxisSizingMode = 'FIXED';
+        ph.primaryAxisAlignItems = 'CENTER'; ph.counterAxisAlignItems = 'CENTER';
+        ph.appendChild(await mkT({ text: `Imagem ${i + 1}`, size: 16, color: '#AAAAAA' }));
+        rowF.appendChild(ph);
+      }
     }
-    if (!placed) {
-      f.appendChild(mkRect(x, y, imgW, imgH, '#f0f0f0', 8, '#dddddd', 1));
-      f.appendChild(await mkText({ text: `Imagem ${i + 1}`, x: x + imgW / 2 - 40, y: y + imgH / 2 - 10, size: 18, color: '#aaaaaa' }));
-    }
+    content.appendChild(rowF);
+    content.appendChild(sp(24, 1760));
   }
+
+  f.appendChild(content);
   return f;
 }
 
-// ── FRAME 9 — COMPONENTS ─────────────────────────
-async function buildComponents(d, primary) {
-  const f = figma.createFrame();
-  f.name = 'Components';
-  f.resize(1920, 2059);
-  f.fills = fill('#FFFFFF');
-  f.clipsContent = true;
-  await mkHeader(f, 'Components', primary);
-  f.appendChild(await mkText({ text: 'Components — a ser preenchido no Figma', x: 80, y: 260, size: 28, color: '#cccccc' }));
+// ── FRAME 9 — COMPONENTS ──────────────────────────
+async function buildComponents(d, primary, ff) {
+  const f = af({ name: 'Components', w: 1920, mode: 'VERTICAL', bg: '#FFFFFF' });
+  await mkHeader(f, 'Components', primary, d, ff);
+
+  const content = af({ name: 'Content', w: 1920, mode: 'VERTICAL', gap: 24, pl: 80, pr: 80, pt: 64, pb: 80 });
+  content.fills = [];
+
+  content.appendChild(await mkT({ text: 'Components', size: 30, style: 'Bold', w: 1760 }));
+  content.appendChild(await mkT({ text: 'Adicione os componentes do projeto diretamente neste frame no Figma.', size: 20, color: '#BBBBBB', w: 1760 }));
+
+  f.appendChild(content);
   return f;
 }
 
-// ── MAIN MESSAGE HANDLER ─────────────────────────
+// ── MAIN ──────────────────────────────────────────
 figma.ui.onmessage = async (message) => {
   if (message.type !== 'CREATE') return;
 
+  _logoHash = null; // reset logo cache for each run
+
   const d = message.data;
+  const ff = message.fontOverride || (d.typography && (d.typography.font || d.typography.primaryFont)) || 'Inter';
   const primary = (d.colors && d.colors[0] && d.colors[0].hex) || '#2078BA';
 
-  figma.notify('⏳ Iniciando Style Guide…');
+  figma.notify('⏳ Criando Style Guide…');
 
   try {
-    // Create a new page (fallback to current page if not possible)
     let page;
     try {
       page = figma.createPage();
       page.name = 'Style Guide — ' + ((d.project && d.project.name) || 'D&Z');
       figma.currentPage = page;
-    } catch (_) {
-      page = figma.currentPage;
-    }
+    } catch (_) { page = figma.currentPage; }
+
+    prog('Criando estilos Figma…', 3, null);
+    await createFigmaStyles(d, ff);
 
     let x = 0, count = 0;
-    const add = (frame) => {
-      frame.x = x; frame.y = 0;
-      page.appendChild(frame);
-      x += frame.width + 120;
-      count++;
-    };
+    const add = (frame) => { frame.x = x; frame.y = 0; page.appendChild(frame); x += frame.width + 120; count++; };
 
-    prog('Project Introduction…', 6, 'intro');
-    add(await buildIntro(d, primary));
-
-    prog('Font Weight…', 17, 'fw');
-    add(await buildFontWeight(d, primary));
-
-    prog('Font Sizes…', 28, 'fs');
-    add(await buildFontSizes(d, primary));
-
-    prog('Styles…', 40, 'st');
-    add(await buildStyles(d, primary));
-
-    prog('Spacing…', 52, 'sp');
-    add(await buildSpacing(d, primary));
-
-    prog('Colors…', 63, 'co');
-    add(await buildColors(d, primary));
-
-    prog('Buttons…', 75, 'bt');
-    add(await buildButtons(d, primary));
-
-    prog('Images…', 87, 'im');
-    add(await buildImages(d, primary));
-
-    prog('Components…', 96, 'cm');
-    add(await buildComponents(d, primary));
+    prog('Project Introduction…', 8, 'intro'); add(await buildIntro(d, primary));
+    prog('Font Weight…',          20, 'fw');   add(await buildFontWeight(d, primary, ff));
+    prog('Font Sizes…',           32, 'fs');   add(await buildFontSizes(d, primary, ff));
+    prog('Styles…',               44, 'st');   add(await buildStyles(d, primary, ff));
+    prog('Spacing…',              55, 'sp');   add(await buildSpacing(d, primary, ff));
+    prog('Colors…',               66, 'co');   add(await buildColors(d, primary, ff));
+    prog('Buttons…',              77, 'bt');   add(await buildButtons(d, primary, ff));
+    prog('Images…',               88, 'im');   add(await buildImages(d, primary, ff));
+    prog('Components…',           96, 'cm');   add(await buildComponents(d, primary, ff));
 
     figma.viewport.scrollAndZoomIntoView(page.children);
     figma.ui.postMessage({ type: 'DONE', count });
-    figma.notify('✅ ' + count + ' frames criados!');
+    figma.notify('✅ ' + count + ' frames + estilos criados!');
 
   } catch (err) {
     const errMsg = (err && err.message) ? err.message : String(err);

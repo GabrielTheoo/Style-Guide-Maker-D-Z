@@ -4,37 +4,58 @@
 <meta charset="UTF-8">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',-apple-system,sans-serif;background:#f5f6f7;color:#162328;width:360px;font-size:13px;}
-.header{background:#2078BA;padding:14px 16px;}
-.header-title{color:#fff;font-size:15px;font-weight:700;}
-.header-sub{color:rgba(255,255,255,.6);font-size:11px;margin-top:2px;}
-.body{padding:16px;}
-p{font-size:12px;color:#59595B;line-height:1.5;margin-bottom:14px;}
-.drop{border:2px dashed #e2e4e8;border-radius:10px;padding:24px;text-align:center;cursor:pointer;position:relative;transition:border-color .15s,background .15s;margin-bottom:14px;}
-.drop:hover,.drop.over{border-color:#2078BA;background:#f0f8ff;}
-.drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
-.drop-icon{font-size:28px;margin-bottom:6px;}
-.drop-label{font-size:13px;color:#59595B;}
-.drop-label strong{color:#2078BA;}
-.file-ok{background:#e8f4fd;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:12px;color:#1e40af;margin-bottom:14px;display:none;}
-.file-ok.show{display:block;}
-.steps{background:#fff;border:1px solid #e2e4e8;border-radius:8px;padding:12px;margin-bottom:14px;}
-.steps-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#999;margin-bottom:8px;}
-.step{display:flex;align-items:center;gap:8px;font-size:12px;color:#59595B;padding:3px 0;}
-.dot{width:8px;height:8px;border-radius:50%;background:#e2e4e8;flex-shrink:0;transition:background .3s;}
-.dot.done{background:#2078BA;}
-.dot.err{background:#ef4444;}
-.btn{width:100%;background:#2078BA;color:#fff;border:none;border-radius:8px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s;}
-.btn:hover{background:#1a609a;}
-.btn:disabled{background:#b0c4d8;cursor:not-allowed;}
-.pb-wrap{height:6px;background:#e8f4fd;border-radius:3px;overflow:hidden;margin-bottom:6px;display:none;}
-.pb-wrap.show{display:block;}
-.pb{height:100%;background:#2078BA;border-radius:3px;transition:width .3s;}
-.pt{font-size:11px;color:#59595B;margin-bottom:10px;display:none;}
-.pt.show{display:block;}
-.msg{margin-top:10px;border-radius:6px;padding:9px 12px;font-size:12px;display:none;}
-.msg.ok{display:block;background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;}
-.msg.err{display:block;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;}
+body{font-family:'Inter',-apple-system,sans-serif;background:#f5f6f7;color:#162328;width:380px;font-size:13px;}
+
+.header{background:#2078BA;padding:14px 16px}
+.header-title{color:#fff;font-size:15px;font-weight:700}
+.header-sub{color:rgba(255,255,255,.6);font-size:11px;margin-top:2px}
+.body{padding:16px}
+
+/* Font picker */
+.section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:#777;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center}
+.font-count{font-weight:400;letter-spacing:0;text-transform:none;color:#aaa;font-size:10px}
+.font-wrap{position:relative;margin-bottom:14px}
+.font-input{width:100%;border:1.5px solid #e2e4e8;border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;color:#162328;outline:none;background:#fff;transition:border-color .15s}
+.font-input:focus{border-color:#2078BA}
+.font-input::placeholder{color:#bbb}
+.font-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid #e2e4e8;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:100;display:none;max-height:180px;overflow-y:auto}
+.font-option{padding:9px 13px;font-size:13px;cursor:pointer;color:#162328;transition:background .1s}
+.font-option:first-child{border-radius:10px 10px 0 0}
+.font-option:last-child{border-radius:0 0 10px 10px}
+.font-option:hover,.font-option.selected{background:#EEF6FF;color:#2078BA}
+.font-hint{font-size:11px;color:#aaa;margin-top:4px;margin-bottom:0;line-height:1.4}
+
+/* File drop */
+p{font-size:12px;color:#59595B;line-height:1.5;margin-bottom:12px}
+.drop{border:2px dashed #e2e4e8;border-radius:10px;padding:22px;text-align:center;cursor:pointer;position:relative;transition:border-color .15s,background .15s;margin-bottom:12px}
+.drop:hover,.drop.over{border-color:#2078BA;background:#f0f8ff}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-icon{font-size:26px;margin-bottom:5px}
+.drop-label{font-size:13px;color:#59595B}
+.drop-label strong{color:#2078BA}
+.file-ok{background:#e8f4fd;border:1px solid #bfdbfe;border-radius:8px;padding:9px 13px;font-size:12px;color:#1e40af;margin-bottom:12px;display:none}
+.file-ok.show{display:block}
+
+/* Steps */
+.steps{background:#fff;border:1px solid #e2e4e8;border-radius:8px;padding:11px 13px;margin-bottom:12px}
+.steps-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#999;margin-bottom:7px}
+.step{display:flex;align-items:center;gap:8px;font-size:12px;color:#59595B;padding:2px 0}
+.dot{width:8px;height:8px;border-radius:50%;background:#e2e4e8;flex-shrink:0;transition:background .3s}
+.dot.done{background:#2078BA}
+.dot.err{background:#ef4444}
+
+/* Button / progress */
+.btn{width:100%;background:#2078BA;color:#fff;border:none;border-radius:8px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s}
+.btn:hover{background:#1a609a}
+.btn:disabled{background:#b0c4d8;cursor:not-allowed}
+.pb-wrap{height:6px;background:#e8f4fd;border-radius:3px;overflow:hidden;margin-bottom:6px;display:none}
+.pb-wrap.show{display:block}
+.pb{height:100%;background:#2078BA;border-radius:3px;transition:width .3s}
+.pt{font-size:11px;color:#59595B;margin-bottom:10px;display:none}
+.pt.show{display:block}
+.msg{margin-top:10px;border-radius:6px;padding:9px 12px;font-size:12px;display:none}
+.msg.ok{display:block;background:#d1fae5;color:#065f46;border:1px solid #6ee7b7}
+.msg.err{display:block;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
 </style>
 </head>
 <body>
@@ -43,16 +64,28 @@ p{font-size:12px;color:#59595B;line-height:1.5;margin-bottom:14px;}
   <div class="header-sub">Carregue o JSON exportado pelo site</div>
 </div>
 <div class="body">
-  <p>Exporte o JSON no site, depois carregue o arquivo aqui para criar todos os frames do guia de estilo direto no Figma.</p>
 
+  <!-- Font picker -->
+  <div class="section-label">
+    Fonte <span class="font-count" id="font-count">Carregando…</span>
+  </div>
+  <div class="font-wrap">
+    <input type="text" class="font-input" id="font-input"
+           placeholder="Carregando fontes…" disabled autocomplete="off" spellcheck="false">
+    <div class="font-dropdown" id="font-dropdown"></div>
+  </div>
+  <p class="font-hint" style="margin-bottom:14px">Selecione uma fonte instalada para usar no style guide. Deixe vazio para usar a do JSON.</p>
+
+  <!-- File drop -->
+  <div class="section-label">Arquivo JSON</div>
   <div class="drop" id="drop">
     <input type="file" accept=".json,application/json" id="file-input" onchange="loadFile(event)">
     <div class="drop-icon">📄</div>
     <div class="drop-label"><strong>Clique ou arraste</strong> o arquivo .json</div>
   </div>
-
   <div class="file-ok" id="file-ok"></div>
 
+  <!-- Steps -->
   <div class="steps">
     <div class="steps-title">Frames que serão criados</div>
     <div class="step"><span class="dot" id="d-intro"></span>Project Introduction</div>
@@ -68,15 +101,51 @@ p{font-size:12px;color:#59595B;line-height:1.5;margin-bottom:14px;}
 
   <div class="pb-wrap" id="pb-wrap"><div class="pb" id="pb" style="width:0%"></div></div>
   <div class="pt" id="pt"></div>
-
   <button class="btn" id="btn" onclick="run()" disabled>✦ Criar Style Guide no Figma</button>
   <div class="msg" id="msg"></div>
 </div>
 
 <script>
 let data = null;
+let selectedFont = '';
+let allFonts = [];
 
-// drag & drop
+// ── Font picker ──────────────────────────────────
+const fontInput = document.getElementById('font-input');
+const fontDropdown = document.getElementById('font-dropdown');
+
+fontInput.addEventListener('input', () => {
+  const q = fontInput.value.toLowerCase().trim();
+  selectedFont = fontInput.value.trim();
+  fontDropdown.innerHTML = '';
+  if (!q) { fontDropdown.style.display = 'none'; return; }
+  const matches = allFonts.filter(f => f.toLowerCase().includes(q)).slice(0, 10);
+  if (!matches.length) { fontDropdown.style.display = 'none'; return; }
+  matches.forEach(font => {
+    const item = document.createElement('div');
+    item.className = 'font-option';
+    item.textContent = font;
+    item.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      fontInput.value = font;
+      selectedFont = font;
+      fontDropdown.style.display = 'none';
+    });
+    fontDropdown.appendChild(item);
+  });
+  fontDropdown.style.display = 'block';
+});
+
+fontInput.addEventListener('blur', () => {
+  setTimeout(() => { fontDropdown.style.display = 'none'; }, 150);
+  selectedFont = fontInput.value.trim();
+});
+
+fontInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { fontDropdown.style.display = 'none'; fontInput.blur(); }
+});
+
+// ── File drop ────────────────────────────────────
 const drop = document.getElementById('drop');
 drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
 drop.addEventListener('dragleave', () => drop.classList.remove('over'));
@@ -97,10 +166,15 @@ function readFile(file) {
       ok.textContent = '✓ ' + file.name + '  ·  v' + (data.version || '?');
       ok.classList.add('show');
       document.getElementById('btn').disabled = false;
+
+      // Pre-fill font input from JSON if nothing selected yet
+      const jsonFont = data.typography && (data.typography.font || data.typography.primaryFont);
+      if (jsonFont && !selectedFont) {
+        fontInput.value = jsonFont;
+        selectedFont = jsonFont;
+      }
       setMsg('', '');
-    } catch(e) {
-      setMsg('err', 'JSON inválido: ' + e.message);
-    }
+    } catch(e) { setMsg('err', 'JSON inválido: ' + e.message); }
   };
   reader.readAsText(file);
 }
@@ -111,7 +185,10 @@ function run() {
   document.getElementById('pb-wrap').classList.add('show');
   document.getElementById('pt').classList.add('show');
   setMsg('', '');
-  parent.postMessage({ pluginMessage: { type: 'CREATE', data } }, '*');
+  // Reset dots
+  document.querySelectorAll('.dot').forEach(d => { d.classList.remove('done', 'err'); });
+  document.getElementById('pb').style.width = '0%';
+  parent.postMessage({ pluginMessage: { type: 'CREATE', data, fontOverride: selectedFont || null } }, '*');
 }
 
 function setMsg(type, text) {
@@ -123,6 +200,16 @@ function setMsg(type, text) {
 window.onmessage = e => {
   const m = e.data.pluginMessage;
   if (!m) return;
+
+  if (m.type === 'FONTS_LOADED') {
+    allFonts = m.fonts;
+    const cnt = document.getElementById('font-count');
+    cnt.textContent = allFonts.length ? `${allFonts.length} disponíveis` : 'nenhuma detectada';
+    fontInput.disabled = false;
+    fontInput.placeholder = allFonts.length ? 'Buscar fonte instalada…' : 'Digite o nome da fonte…';
+    return;
+  }
+
   if (m.type === 'PROGRESS') {
     document.getElementById('pb').style.width = m.pct + '%';
     document.getElementById('pt').textContent = m.text;
@@ -131,21 +218,18 @@ window.onmessage = e => {
       if (d) d.classList.add('done');
     }
   }
+
   if (m.type === 'DONE') {
     document.getElementById('pb').style.width = '100%';
     document.getElementById('pt').textContent = 'Concluído!';
-    setMsg('ok', '✅ ' + m.count + ' frames criados com sucesso!');
+    setMsg('ok', '✅ ' + m.count + ' frames + estilos Figma criados!');
     document.getElementById('btn').disabled = false;
   }
+
   if (m.type === 'ERROR') {
     document.getElementById('pb-wrap').classList.remove('show');
     setMsg('err', '❌ ' + m.text);
     document.getElementById('btn').disabled = false;
-    // mark failing dot
-    if (m.dot) {
-      const d = document.getElementById('d-' + m.dot);
-      if (d) { d.classList.remove('done'); d.classList.add('err'); }
-    }
   }
 };
 </script>
