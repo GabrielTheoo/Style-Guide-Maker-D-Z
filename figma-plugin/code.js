@@ -237,20 +237,35 @@ async function createFigmaStyles(d, ff) {
   var lhBb = _lhBr <= 5 ? Math.round(20 * _lhBr) : _lhBr;
   const lh = function(size, baseSize, baseLH) { return Math.max(Math.round(baseLH * size / baseSize), size + 2); };
 
+  // Read font sizes from JSON (with defaults)
+  var _fs = (d.typography && d.typography.fontSizes) || {};
+  var szH1  = _fs.h1      || 52;
+  var szH2  = _fs.h2      || 44;
+  var szH3  = _fs.h3      || 36;
+  var szH4  = _fs.h4      || 28;
+  var szH5  = _fs.h5      || 22;
+  var szH6  = _fs.h6      || 20;
+  var szBL  = _fs.bodyL   || 20;
+  var szBM  = _fs.bodyM   || 18;
+  var szBS  = _fs.bodyS   || 16;
+  var szBtn = _fs.button  || 16;
+  var szLbl = _fs.label   || 16;
+  var szCap = _fs.caption || 12;
+
   // ── Text styles under "Textos/"
   const textSpecs = [
-    { name: 'Textos/H1',      size: 52, style: 'Bold',     lh: lhHb },
-    { name: 'Textos/H2',      size: 44, style: 'Bold',     lh: lh(44, 52, lhHb) },
-    { name: 'Textos/H3',      size: 36, style: 'Regular',  lh: lh(36, 52, lhHb) },
-    { name: 'Textos/H4',      size: 28, style: 'Bold',     lh: lh(28, 52, lhHb) },
-    { name: 'Textos/H5',      size: 22, style: 'Bold',     lh: lh(22, 52, lhHb) },
-    { name: 'Textos/H6',      size: 20, style: 'Regular',  lh: lh(20, 52, lhHb) },
-    { name: 'Textos/Body L',  size: 20, style: 'Regular',  lh: lhBb },
-    { name: 'Textos/Body M',  size: 18, style: 'Regular',  lh: lh(18, 20, lhBb) },
-    { name: 'Textos/Body S',  size: 16, style: 'Regular',  lh: lh(16, 20, lhBb) },
-    { name: 'Textos/Button',  size: 16, style: 'SemiBold', lh: lh(16, 20, lhBb) },
-    { name: 'Textos/Label',   size: 16, style: 'Medium',   lh: lh(16, 20, lhBb) },
-    { name: 'Textos/Caption', size: 12, style: 'Regular',  lh: lh(12, 20, lhBb) },
+    { name: 'Textos/H1',      size: szH1,  style: 'Bold',     lh: lhHb },
+    { name: 'Textos/H2',      size: szH2,  style: 'Bold',     lh: lh(szH2,  szH1, lhHb) },
+    { name: 'Textos/H3',      size: szH3,  style: 'Regular',  lh: lh(szH3,  szH1, lhHb) },
+    { name: 'Textos/H4',      size: szH4,  style: 'Bold',     lh: lh(szH4,  szH1, lhHb) },
+    { name: 'Textos/H5',      size: szH5,  style: 'Bold',     lh: lh(szH5,  szH1, lhHb) },
+    { name: 'Textos/H6',      size: szH6,  style: 'Regular',  lh: lh(szH6,  szH1, lhHb) },
+    { name: 'Textos/Body L',  size: szBL,  style: 'Regular',  lh: lhBb },
+    { name: 'Textos/Body M',  size: szBM,  style: 'Regular',  lh: lh(szBM,  szBL, lhBb) },
+    { name: 'Textos/Body S',  size: szBS,  style: 'Regular',  lh: lh(szBS,  szBL, lhBb) },
+    { name: 'Textos/Button',  size: szBtn, style: 'SemiBold', lh: lh(szBtn, szBL, lhBb) },
+    { name: 'Textos/Label',   size: szLbl, style: 'Medium',   lh: lh(szLbl, szBL, lhBb) },
+    { name: 'Textos/Caption', size: szCap, style: 'Regular',  lh: lh(szCap, szBL, lhBb) },
   ];
   for (const s of textSpecs) {
     try {
@@ -415,10 +430,25 @@ async function buildFontSizes(d, primary, ff) {
   // Values > 5 = absolute px (new format); values ≤ 5 = ratio (old format, backward compat)
   var _lhHraw = (d.typography && d.typography.lineHeightHead) || 64;
   var _lhBraw = (d.typography && d.typography.lineHeightBody) || 32;
-  var lhHeadBase = _lhHraw <= 5 ? Math.round(52 * _lhHraw) : _lhHraw; // px for H1 (52px)
-  var lhBodyBase = _lhBraw <= 5 ? Math.round(20 * _lhBraw) : _lhBraw; // px for Body L (20px)
+  var lhHeadBase = _lhHraw <= 5 ? Math.round(52 * _lhHraw) : _lhHraw;
+  var lhBodyBase = _lhBraw <= 5 ? Math.round(20 * _lhBraw) : _lhBraw;
   // Proportional: scale LH to each font size
   const lh = function(size, baseSize, baseLH) { return Math.max(Math.round(baseLH * size / baseSize), size + 2); };
+
+  // Read font sizes from JSON (with defaults)
+  var _fsz = (d.typography && d.typography.fontSizes) || {};
+  var szH1  = _fsz.h1      || 52;
+  var szH2  = _fsz.h2      || 44;
+  var szH3  = _fsz.h3      || 36;
+  var szH4  = _fsz.h4      || 28;
+  var szH5  = _fsz.h5      || 22;
+  var szH6  = _fsz.h6      || 20;
+  var szBL  = _fsz.bodyL   || 20;
+  var szBM  = _fsz.bodyM   || 18;
+  var szBS  = _fsz.bodyS   || 16;
+  var szBtn = _fsz.button  || 16;
+  var szLbl = _fsz.label   || 16;
+  var szCap = _fsz.caption || 12;
 
   const lorem = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer tristique orci est.';
 
@@ -449,22 +479,22 @@ async function buildFontSizes(d, primary, ff) {
   }
 
   await addSection('Headers', [
-    { label: 'H1', size: 52, style: 'Bold',    lh: lhHeadBase },
-    { label: 'H2', size: 44, style: 'Bold',    lh: lh(44, 52, lhHeadBase) },
-    { label: 'H3', size: 36, style: 'Regular', lh: lh(36, 52, lhHeadBase) },
-    { label: 'H4', size: 28, style: 'Bold',    lh: lh(28, 52, lhHeadBase) },
-    { label: 'H5', size: 22, style: 'Bold',    lh: lh(22, 52, lhHeadBase) },
-    { label: 'H6', size: 20, style: 'Regular', lh: lh(20, 52, lhHeadBase) },
+    { label: 'H1', size: szH1, style: 'Bold',    lh: lhHeadBase },
+    { label: 'H2', size: szH2, style: 'Bold',    lh: lh(szH2, szH1, lhHeadBase) },
+    { label: 'H3', size: szH3, style: 'Regular', lh: lh(szH3, szH1, lhHeadBase) },
+    { label: 'H4', size: szH4, style: 'Bold',    lh: lh(szH4, szH1, lhHeadBase) },
+    { label: 'H5', size: szH5, style: 'Bold',    lh: lh(szH5, szH1, lhHeadBase) },
+    { label: 'H6', size: szH6, style: 'Regular', lh: lh(szH6, szH1, lhHeadBase) },
   ]);
   await addSection('Body', [
-    { label: 'Body L', size: 20, style: 'Regular', lh: lhBodyBase },
-    { label: 'Body M', size: 18, style: 'Regular', lh: lh(18, 20, lhBodyBase) },
-    { label: 'Body S', size: 16, style: 'Regular', lh: lh(16, 20, lhBodyBase) },
+    { label: 'Body L', size: szBL, style: 'Regular', lh: lhBodyBase },
+    { label: 'Body M', size: szBM, style: 'Regular', lh: lh(szBM, szBL, lhBodyBase) },
+    { label: 'Body S', size: szBS, style: 'Regular', lh: lh(szBS, szBL, lhBodyBase) },
   ]);
   await addSection('Buttons & Labels', [
-    { label: 'Button',  size: 16, style: 'SemiBold', lh: lh(16, 20, lhBodyBase) },
-    { label: 'Label',   size: 16, style: 'Medium',   lh: lh(16, 20, lhBodyBase) },
-    { label: 'Caption', size: 12, style: 'Regular',  lh: lh(12, 20, lhBodyBase) },
+    { label: 'Button',  size: szBtn, style: 'SemiBold', lh: lh(szBtn, szBL, lhBodyBase) },
+    { label: 'Label',   size: szLbl, style: 'Medium',   lh: lh(szLbl, szBL, lhBodyBase) },
+    { label: 'Caption', size: szCap, style: 'Regular',  lh: lh(szCap, szBL, lhBodyBase) },
   ]);
 
   f.appendChild(content);

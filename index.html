@@ -737,6 +737,76 @@
             </div>
             <div class="lh-labels" style="margin-top:6px;"><span>Valores em px exatos, como no Figma. Os demais tamanhos são calculados proporcionalmente.</span></div>
           </div>
+
+          <!-- Font Sizes per style -->
+          <div class="field">
+            <label>Tamanhos de Fonte (px)</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;">
+
+              <!-- Headers column -->
+              <div>
+                <div style="font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#aaa;margin-bottom:6px;">Títulos</div>
+                <div style="display:flex;flex-direction:column;gap:5px;">
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:12px;font-weight:700;color:#555;min-width:28px;">H1</span>
+                    <input type="number" id="fs-h1" value="52" min="8" max="200" step="1" oninput="updateFontSizes()" style="flex:1;padding:6px 8px;font-size:13px;">
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:12px;font-weight:700;color:#555;min-width:28px;">H2</span>
+                    <input type="number" id="fs-h2" value="44" min="8" max="200" step="1" oninput="updateFontSizes()" style="flex:1;padding:6px 8px;font-size:13px;">
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:12px;font-weight:700;color:#555;min-width:28px;">H3</span>
+                    <input type="number" id="fs-h3" value="36" min="8" max="200" step="1" oninput="updateFontSizes()" style="flex:1;padding:6px 8px;font-size:13px;">
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:12px;font-weight:700;color:#555;min-width:28px;">H4</span>
+                    <input type="number" id="fs-h4" value="28" min="8" max="200" step="1" oninput="updateFontSizes()" style="flex:1;padding:6px 8px;font-size:13px;">
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:12px;font-weight:700;color:#555;min-width:28px;">H5</span>
+                    <input type="number" id="fs-h5" value="22" min="8" max="200" step="1" oninput="updateFontSizes()" style="flex:1;padding:6px 8px;font-size:13px;">
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:12px;font-weight:700;color:#555;min-width:28px;">H6</span>
+                    <input type="number" id="fs-h6" value="20" min="8" max="200" step="1" oninput="updateFontSizes()" style="flex:1;padding:6px 8px;font-size:13px;">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Body column -->
+              <div>
+                <div style="font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#aaa;margin-bottom:6px;">Corpo</div>
+                <div style="display:flex;flex-direction:column;gap:5px;">
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:11px;font-weight:600;color:#555;min-width:44px;">Body L</span>
+                    <input type="number" id="fs-bodyL" value="20" min="8" max="100" step="1" oninput="updateFontSizes()" style="flex:1;padding:6px 8px;font-size:13px;">
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:11px;font-weight:600;color:#555;min-width:44px;">Body M</span>
+                    <input type="number" id="fs-bodyM" value="18" min="8" max="100" step="1" oninput="updateFontSizes()" style="flex:1;padding:6px 8px;font-size:13px;">
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:11px;font-weight:600;color:#555;min-width:44px;">Body S</span>
+                    <input type="number" id="fs-bodyS" value="16" min="8" max="100" step="1" oninput="updateFontSizes()" style="flex:1;padding:6px 8px;font-size:13px;">
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:11px;font-weight:600;color:#555;min-width:44px;">Button</span>
+                    <input type="number" id="fs-button" value="16" min="8" max="100" step="1" oninput="updateFontSizes()" style="flex:1;padding:6px 8px;font-size:13px;">
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:11px;font-weight:600;color:#555;min-width:44px;">Label</span>
+                    <input type="number" id="fs-label" value="16" min="8" max="100" step="1" oninput="updateFontSizes()" style="flex:1;padding:6px 8px;font-size:13px;">
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:11px;font-weight:600;color:#555;min-width:44px;">Caption</span>
+                    <input type="number" id="fs-caption" value="12" min="8" max="100" step="1" oninput="updateFontSizes()" style="flex:1;padding:6px 8px;font-size:13px;">
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
         </div>
         <div class="preview-panel">
           <div class="preview-label">Font Weight Preview</div>
@@ -948,7 +1018,13 @@
 // ═══════════════════════════════════════════════
 const state = {
   project: { name: '', tagline: '', logo: null, background: null },
-  typography: { font: 'Montserrat', sample: 'The quick brown fox jumps over the lazy dog', lineHeightHead: 64, lineHeightBody: 32 },
+  typography: {
+    font: 'Montserrat',
+    sample: 'The quick brown fox jumps over the lazy dog',
+    lineHeightHead: 64,
+    lineHeightBody: 32,
+    fontSizes: { h1:52, h2:44, h3:36, h4:28, h5:22, h6:20, bodyL:20, bodyM:18, bodyS:16, button:16, label:16, caption:12 }
+  },
   colors: [
     { name: 'Black',    hex: '#262628' },
     { name: 'White',    hex: '#FFFFFF' },
@@ -1132,20 +1208,42 @@ function updateLineHeight() {
   renderFontWeightGrid();
 }
 
+function updateFontSizes() {
+  const fs = state.typography.fontSizes;
+  fs.h1      = parseInt(document.getElementById('fs-h1').value)      || 52;
+  fs.h2      = parseInt(document.getElementById('fs-h2').value)      || 44;
+  fs.h3      = parseInt(document.getElementById('fs-h3').value)      || 36;
+  fs.h4      = parseInt(document.getElementById('fs-h4').value)      || 28;
+  fs.h5      = parseInt(document.getElementById('fs-h5').value)      || 22;
+  fs.h6      = parseInt(document.getElementById('fs-h6').value)      || 20;
+  fs.bodyL   = parseInt(document.getElementById('fs-bodyL').value)   || 20;
+  fs.bodyM   = parseInt(document.getElementById('fs-bodyM').value)   || 18;
+  fs.bodyS   = parseInt(document.getElementById('fs-bodyS').value)   || 16;
+  fs.button  = parseInt(document.getElementById('fs-button').value)  || 16;
+  fs.label   = parseInt(document.getElementById('fs-label').value)   || 16;
+  fs.caption = parseInt(document.getElementById('fs-caption').value) || 12;
+  renderFontWeightGrid();
+}
+
 function renderFontWeightGrid() {
   const font = state.typography.font;
   const sample = state.typography.sample || 'Aa Bb Cc';
   const lhH = state.typography.lineHeightHead || 64;
   const lhB = state.typography.lineHeightBody || 32;
-  // Proportional LH for each heading size (base: H1=52px)
-  const lhFor = (size, baseLH, baseSize) => Math.round(baseLH * size / baseSize);
+  const fs = state.typography.fontSizes || {};
+  const szH1 = fs.h1 || 52;
+  const szH2 = fs.h2 || 44;
+  const szBL = fs.bodyL || 20;
+  // Proportional LH preview
+  const lhFor = (size, baseSize, baseLH) => Math.max(Math.round(baseLH * size / baseSize), size + 2);
   const weights = [100,200,300,400,500,600,700,800,900];
   const labels = ['Thin','Extra Light','Light','Regular','Medium','Semi Bold','Bold','Extra Bold','Black'];
   const grid = document.getElementById('font-weight-grid');
   grid.innerHTML = `
-    <div style="font-size:11px;color:#999;margin-bottom:8px;padding:6px 8px;background:#f5f6f7;border-radius:6px;">
-      <strong style="color:#333;">${font}</strong>
-      &nbsp;·&nbsp;H1 LH: ${lhH}px &nbsp;·&nbsp; H2: ${lhFor(44,lhH,52)}px &nbsp;·&nbsp; Body: ${lhB}px
+    <div style="font-size:11px;color:#999;margin-bottom:8px;padding:6px 8px;background:#f5f6f7;border-radius:6px;line-height:1.6;">
+      <strong style="color:#333;">${font}</strong><br>
+      <span>H1: ${szH1}px · H2: ${szH2}px · Body L: ${szBL}px</span><br>
+      <span>LH Títulos (H1): ${lhH}px · LH H2: ${lhFor(szH2,szH1,lhH)}px · LH Body: ${lhB}px</span>
     </div>
   ` + weights.map((w,i) => `
     <div class="font-weight-row">
