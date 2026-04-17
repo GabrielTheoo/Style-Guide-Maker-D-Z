@@ -3,11 +3,20 @@
 
 figma.showUI(__html__, { width: 400, height: 660, title: 'Style Guide Maker — D&Z' });
 
-// ── FONTS: detect installed fonts on startup ──────
+// ── FONTS: detect installed fonts + build styles map ──
+var _fontStylesMap = {}; // family → [styles]
+
 (async () => {
   try {
     const fonts = await figma.listAvailableFontsAsync();
-    const families = [...new Set(fonts.map(f => f.fontName.family))].sort();
+    // Build map: family → list of available styles
+    for (var i = 0; i < fonts.length; i++) {
+      var fam = fonts[i].fontName.family;
+      var sty = fonts[i].fontName.style;
+      if (!_fontStylesMap[fam]) _fontStylesMap[fam] = [];
+      _fontStylesMap[fam].push(sty);
+    }
+    const families = Object.keys(_fontStylesMap).sort();
     figma.ui.postMessage({ type: 'FONTS_LOADED', fonts: families });
   } catch (_) {
     figma.ui.postMessage({ type: 'FONTS_LOADED', fonts: [] });
@@ -58,29 +67,57 @@ function decodeBase64(b64) {
 }
 
 async function loadF(family, style) {
-  const fallbackStyle = /bold/i.test(style) ? 'Bold'
-    : /semi/i.test(style) ? 'SemiBold'
-    : /medium/i.test(style) ? 'Medium'
-    : /light/i.test(style) ? 'Light'
-    : /italic/i.test(style) ? 'Italic'
-    : 'Regular';
-  try {
-    await figma.loadFontAsync({ family, style });
-    return { family, style };
-  } catch (_) {
-    try {
-      await figma.loadFontAsync({ family, style: fallbackStyle });
-      return { family, style: fallbackStyle };
-    } catch (_) {
-      try {
-        await figma.loadFontAsync({ family, style: 'Regular' });
-        return { family, style: 'Regular' };
-      } catch (_) {
-        await figma.loadFontAsync({ family: 'Inter', style: 'Regular' });
-        return { family: 'Inter', style: 'Regular' };
+  // 1. Try exact match
+  try { await figma.loadFontAsync({ family, style }); return { family, style }; } catch (_) {}
+
+  // 2. If this family has available styles in our map, try style aliases
+  var available = _fontStylesMap[family];
+  if (available && available.length > 0) {
+    // Build candidate list by weight category
+    var isBold     = /bold/i.test(style) && !/semi|demi/i.test(style);
+    var isSemi     = /semi.*bold|demi/i.test(style) || style === 'SemiBold';
+    var isMedium   = /^medium$/i.test(style);
+    var isLight    = /^light$/i.test(style);
+    var isXLight   = /extra.*light|extralight|thin/i.test(style);
+    var isBlack    = /black|heavy/i.test(style);
+    var isItalic   = /italic/i.test(style);
+
+    var candidates;
+    if (isXLight)     candidates = ['ExtraLight','Thin','35 Thin','Ultra Light','200','100','Light'];
+    else if (isLight) candidates = ['Light','45 Light','300','Book Light'];
+    else if (isMedium)candidates = ['Medium','65 Medium','500','Book'];
+    else if (isSemi)  candidates = ['SemiBold','65 Medium','Demi Bold','DemiBold','600'];
+    else if (isBold)  candidates = ['Bold','75 Bold','Heavy','700','ExtraBold','Black'];
+    else if (isBlack) candidates = ['Black','95 Black','Heavy','900','ExtraBold'];
+    else              candidates = ['Regular','55 Roman','Roman','Book','Normal','400','Rg','Plain','W01 Regular'];
+
+    if (isItalic) {
+      var italicCands = candidates.map(function(c){ return c + ' Italic'; })
+                                   .concat(candidates.map(function(c){ return c + ' Oblique'; }));
+      candidates = italicCands.concat(candidates);
+    }
+
+    for (var ci = 0; ci < candidates.length; ci++) {
+      if (available.indexOf(candidates[ci]) !== -1) {
+        try { await figma.loadFontAsync({ family, style: candidates[ci] }); return { family, style: candidates[ci] }; } catch (_) {}
       }
     }
+    // Try any non-italic style as last resort
+    for (var ai = 0; ai < available.length; ai++) {
+      if (!isItalic && /italic|oblique/i.test(available[ai])) continue;
+      try { await figma.loadFontAsync({ family, style: available[ai] }); return { family, style: available[ai] }; } catch (_) {}
+    }
   }
+
+  // 3. Fall back to Inter
+  var fbStyle = /bold/i.test(style) && !/semi/i.test(style) ? 'Bold'
+    : /semi|demi/i.test(style) ? 'SemiBold'
+    : /medium/i.test(style) ? 'Medium'
+    : /light/i.test(style) ? 'Light'
+    : 'Regular';
+  try { await figma.loadFontAsync({ family: 'Inter', style: fbStyle }); return { family: 'Inter', style: fbStyle }; } catch (_) {}
+  await figma.loadFontAsync({ family: 'Inter', style: 'Regular' });
+  return { family: 'Inter', style: 'Regular' };
 }
 
 function isLight(hex) {
@@ -193,20 +230,25 @@ function divider(w = 1760) { return mkR(w, 1, '#EEEEEE'); }
 
 // ── CREATE FIGMA STYLES ───────────────────────────
 async function createFigmaStyles(d, ff) {
+  // Read line heights from JSON
+  const lhH = (d.typography && d.typography.lineHeightHead) || 1.2;
+  const lhB = (d.typography && d.typography.lineHeightBody) || 1.6;
+  const lh = function(size, ratio) { return Math.round(size * ratio); };
+
   // ── Text styles under "Textos/"
   const textSpecs = [
-    { name: 'Textos/H1',      size: 52, style: 'Bold',     lh: 68 },
-    { name: 'Textos/H2',      size: 44, style: 'Bold',     lh: 56 },
-    { name: 'Textos/H3',      size: 36, style: 'Regular',  lh: 44 },
-    { name: 'Textos/H4',      size: 28, style: 'Bold',     lh: 36 },
-    { name: 'Textos/H5',      size: 22, style: 'Bold',     lh: 28 },
-    { name: 'Textos/H6',      size: 20, style: 'Regular',  lh: 24 },
-    { name: 'Textos/Body L',  size: 20, style: 'Regular',  lh: 32 },
-    { name: 'Textos/Body M',  size: 18, style: 'Regular',  lh: 28 },
-    { name: 'Textos/Body S',  size: 16, style: 'Regular',  lh: 24 },
-    { name: 'Textos/Button',  size: 16, style: 'SemiBold', lh: 20 },
-    { name: 'Textos/Label',   size: 16, style: 'Medium',   lh: 24 },
-    { name: 'Textos/Caption', size: 12, style: 'Regular',  lh: 18 },
+    { name: 'Textos/H1',      size: 52, style: 'Bold',     lh: lh(52, lhH) },
+    { name: 'Textos/H2',      size: 44, style: 'Bold',     lh: lh(44, lhH) },
+    { name: 'Textos/H3',      size: 36, style: 'Regular',  lh: lh(36, lhH) },
+    { name: 'Textos/H4',      size: 28, style: 'Bold',     lh: lh(28, lhH) },
+    { name: 'Textos/H5',      size: 22, style: 'Bold',     lh: lh(22, lhH) },
+    { name: 'Textos/H6',      size: 20, style: 'Regular',  lh: lh(20, lhH) },
+    { name: 'Textos/Body L',  size: 20, style: 'Regular',  lh: lh(20, lhB) },
+    { name: 'Textos/Body M',  size: 18, style: 'Regular',  lh: lh(18, lhB) },
+    { name: 'Textos/Body S',  size: 16, style: 'Regular',  lh: lh(16, lhB) },
+    { name: 'Textos/Button',  size: 16, style: 'SemiBold', lh: lh(16, 1.25) },
+    { name: 'Textos/Label',   size: 16, style: 'Medium',   lh: lh(16, 1.5)  },
+    { name: 'Textos/Caption', size: 12, style: 'Regular',  lh: lh(12, 1.5)  },
   ];
   for (const s of textSpecs) {
     try {
@@ -367,16 +409,21 @@ async function buildFontSizes(d, primary, ff) {
   const content = af({ name: 'Content', w: 1920, mode: 'VERTICAL', gap: 0, pl: 80, pr: 80, pt: 64, pb: 80 });
   content.fills = [];
 
+  // Read line heights from JSON (set by user in website)
+  const lhH = (d.typography && d.typography.lineHeightHead) || 1.2;
+  const lhB = (d.typography && d.typography.lineHeightBody) || 1.6;
+  const lh = function(size, ratio) { return Math.round(size * ratio); };
+
   const lorem = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer tristique orci est.';
 
   async function addSection(title, specs) {
     content.appendChild(await mkT({ text: title, size: 30, style: 'Bold', w: 1760 }));
     content.appendChild(sp(20, 1760));
-    for (const h of specs) {
+    for (var si = 0; si < specs.length; si++) {
+      var h = specs[si];
       const fn = await loadF(ff, h.style);
 
-      // Row: sample | spec
-      const row = af({ name: `${h.label} Row`, mode: 'HORIZONTAL', gap: 0 });
+      const row = af({ name: h.label + ' Row', mode: 'HORIZONTAL', gap: 0 });
       row.fills = []; row.primaryAxisAlignItems = 'SPACE_BETWEEN'; row.counterAxisAlignItems = 'CENTER';
 
       const t = figma.createText();
@@ -384,10 +431,10 @@ async function buildFontSizes(d, primary, ff) {
       t.lineHeight = { value: h.lh, unit: 'PIXELS' };
       t.fills = fill('#111111');
       t.textAutoResize = 'HEIGHT'; t.resize(1380, 100);
-      t.characters = `${h.label} — ${lorem.slice(0, h.size > 30 ? 30 : 55)}`;
+      t.characters = h.label + ' — ' + lorem.slice(0, h.size > 30 ? 30 : 55);
       row.appendChild(t);
 
-      row.appendChild(await mkT({ text: `${h.size}px · ${h.style}`, size: 13, color: '#AAAAAA', align: 'RIGHT' }));
+      row.appendChild(await mkT({ text: h.size + 'px · ' + h.style + ' · LH ' + h.lh + 'px', size: 13, color: '#AAAAAA', align: 'RIGHT' }));
       content.appendChild(row);
       content.appendChild(divider(1760));
       content.appendChild(sp(20, 1760));
@@ -396,22 +443,22 @@ async function buildFontSizes(d, primary, ff) {
   }
 
   await addSection('Headers', [
-    { label: 'H1', size: 52, style: 'Bold',    lh: 68 },
-    { label: 'H2', size: 44, style: 'Bold',    lh: 56 },
-    { label: 'H3', size: 36, style: 'Regular', lh: 44 },
-    { label: 'H4', size: 28, style: 'Bold',    lh: 36 },
-    { label: 'H5', size: 22, style: 'Bold',    lh: 28 },
-    { label: 'H6', size: 20, style: 'Regular', lh: 24 },
+    { label: 'H1', size: 52, style: 'Bold',    lh: lh(52, lhH) },
+    { label: 'H2', size: 44, style: 'Bold',    lh: lh(44, lhH) },
+    { label: 'H3', size: 36, style: 'Regular', lh: lh(36, lhH) },
+    { label: 'H4', size: 28, style: 'Bold',    lh: lh(28, lhH) },
+    { label: 'H5', size: 22, style: 'Bold',    lh: lh(22, lhH) },
+    { label: 'H6', size: 20, style: 'Regular', lh: lh(20, lhH) },
   ]);
   await addSection('Body', [
-    { label: 'Body L', size: 20, style: 'Regular', lh: 32 },
-    { label: 'Body M', size: 18, style: 'Regular', lh: 28 },
-    { label: 'Body S', size: 16, style: 'Regular', lh: 24 },
+    { label: 'Body L', size: 20, style: 'Regular', lh: lh(20, lhB) },
+    { label: 'Body M', size: 18, style: 'Regular', lh: lh(18, lhB) },
+    { label: 'Body S', size: 16, style: 'Regular', lh: lh(16, lhB) },
   ]);
   await addSection('Buttons & Labels', [
-    { label: 'Button',  size: 16, style: 'SemiBold', lh: 20 },
-    { label: 'Label',   size: 16, style: 'Medium',   lh: 24 },
-    { label: 'Caption', size: 12, style: 'Regular',  lh: 18 },
+    { label: 'Button',  size: 16, style: 'SemiBold', lh: lh(16, 1.25) },
+    { label: 'Label',   size: 16, style: 'Medium',   lh: lh(16, 1.5)  },
+    { label: 'Caption', size: 12, style: 'Regular',  lh: lh(12, 1.5)  },
   ]);
 
   f.appendChild(content);
