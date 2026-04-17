@@ -230,25 +230,27 @@ function divider(w = 1760) { return mkR(w, 1, '#EEEEEE'); }
 
 // ── CREATE FIGMA STYLES ───────────────────────────
 async function createFigmaStyles(d, ff) {
-  // Read line heights from JSON
-  const lhH = (d.typography && d.typography.lineHeightHead) || 1.2;
-  const lhB = (d.typography && d.typography.lineHeightBody) || 1.6;
-  const lh = function(size, ratio) { return Math.round(size * ratio); };
+  // Read line heights (px absolute; ≤5 = old ratio format, backward compat)
+  var _lhHr = (d.typography && d.typography.lineHeightHead) || 64;
+  var _lhBr = (d.typography && d.typography.lineHeightBody) || 32;
+  var lhHb = _lhHr <= 5 ? Math.round(52 * _lhHr) : _lhHr;
+  var lhBb = _lhBr <= 5 ? Math.round(20 * _lhBr) : _lhBr;
+  const lh = function(size, baseSize, baseLH) { return Math.max(Math.round(baseLH * size / baseSize), size + 2); };
 
   // ── Text styles under "Textos/"
   const textSpecs = [
-    { name: 'Textos/H1',      size: 52, style: 'Bold',     lh: lh(52, lhH) },
-    { name: 'Textos/H2',      size: 44, style: 'Bold',     lh: lh(44, lhH) },
-    { name: 'Textos/H3',      size: 36, style: 'Regular',  lh: lh(36, lhH) },
-    { name: 'Textos/H4',      size: 28, style: 'Bold',     lh: lh(28, lhH) },
-    { name: 'Textos/H5',      size: 22, style: 'Bold',     lh: lh(22, lhH) },
-    { name: 'Textos/H6',      size: 20, style: 'Regular',  lh: lh(20, lhH) },
-    { name: 'Textos/Body L',  size: 20, style: 'Regular',  lh: lh(20, lhB) },
-    { name: 'Textos/Body M',  size: 18, style: 'Regular',  lh: lh(18, lhB) },
-    { name: 'Textos/Body S',  size: 16, style: 'Regular',  lh: lh(16, lhB) },
-    { name: 'Textos/Button',  size: 16, style: 'SemiBold', lh: lh(16, 1.25) },
-    { name: 'Textos/Label',   size: 16, style: 'Medium',   lh: lh(16, 1.5)  },
-    { name: 'Textos/Caption', size: 12, style: 'Regular',  lh: lh(12, 1.5)  },
+    { name: 'Textos/H1',      size: 52, style: 'Bold',     lh: lhHb },
+    { name: 'Textos/H2',      size: 44, style: 'Bold',     lh: lh(44, 52, lhHb) },
+    { name: 'Textos/H3',      size: 36, style: 'Regular',  lh: lh(36, 52, lhHb) },
+    { name: 'Textos/H4',      size: 28, style: 'Bold',     lh: lh(28, 52, lhHb) },
+    { name: 'Textos/H5',      size: 22, style: 'Bold',     lh: lh(22, 52, lhHb) },
+    { name: 'Textos/H6',      size: 20, style: 'Regular',  lh: lh(20, 52, lhHb) },
+    { name: 'Textos/Body L',  size: 20, style: 'Regular',  lh: lhBb },
+    { name: 'Textos/Body M',  size: 18, style: 'Regular',  lh: lh(18, 20, lhBb) },
+    { name: 'Textos/Body S',  size: 16, style: 'Regular',  lh: lh(16, 20, lhBb) },
+    { name: 'Textos/Button',  size: 16, style: 'SemiBold', lh: lh(16, 20, lhBb) },
+    { name: 'Textos/Label',   size: 16, style: 'Medium',   lh: lh(16, 20, lhBb) },
+    { name: 'Textos/Caption', size: 12, style: 'Regular',  lh: lh(12, 20, lhBb) },
   ];
   for (const s of textSpecs) {
     try {
@@ -409,10 +411,14 @@ async function buildFontSizes(d, primary, ff) {
   const content = af({ name: 'Content', w: 1920, mode: 'VERTICAL', gap: 0, pl: 80, pr: 80, pt: 64, pb: 80 });
   content.fills = [];
 
-  // Read line heights from JSON (set by user in website)
-  const lhH = (d.typography && d.typography.lineHeightHead) || 1.2;
-  const lhB = (d.typography && d.typography.lineHeightBody) || 1.6;
-  const lh = function(size, ratio) { return Math.round(size * ratio); };
+  // Read line heights from JSON
+  // Values > 5 = absolute px (new format); values ≤ 5 = ratio (old format, backward compat)
+  var _lhHraw = (d.typography && d.typography.lineHeightHead) || 64;
+  var _lhBraw = (d.typography && d.typography.lineHeightBody) || 32;
+  var lhHeadBase = _lhHraw <= 5 ? Math.round(52 * _lhHraw) : _lhHraw; // px for H1 (52px)
+  var lhBodyBase = _lhBraw <= 5 ? Math.round(20 * _lhBraw) : _lhBraw; // px for Body L (20px)
+  // Proportional: scale LH to each font size
+  const lh = function(size, baseSize, baseLH) { return Math.max(Math.round(baseLH * size / baseSize), size + 2); };
 
   const lorem = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer tristique orci est.';
 
@@ -443,22 +449,22 @@ async function buildFontSizes(d, primary, ff) {
   }
 
   await addSection('Headers', [
-    { label: 'H1', size: 52, style: 'Bold',    lh: lh(52, lhH) },
-    { label: 'H2', size: 44, style: 'Bold',    lh: lh(44, lhH) },
-    { label: 'H3', size: 36, style: 'Regular', lh: lh(36, lhH) },
-    { label: 'H4', size: 28, style: 'Bold',    lh: lh(28, lhH) },
-    { label: 'H5', size: 22, style: 'Bold',    lh: lh(22, lhH) },
-    { label: 'H6', size: 20, style: 'Regular', lh: lh(20, lhH) },
+    { label: 'H1', size: 52, style: 'Bold',    lh: lhHeadBase },
+    { label: 'H2', size: 44, style: 'Bold',    lh: lh(44, 52, lhHeadBase) },
+    { label: 'H3', size: 36, style: 'Regular', lh: lh(36, 52, lhHeadBase) },
+    { label: 'H4', size: 28, style: 'Bold',    lh: lh(28, 52, lhHeadBase) },
+    { label: 'H5', size: 22, style: 'Bold',    lh: lh(22, 52, lhHeadBase) },
+    { label: 'H6', size: 20, style: 'Regular', lh: lh(20, 52, lhHeadBase) },
   ]);
   await addSection('Body', [
-    { label: 'Body L', size: 20, style: 'Regular', lh: lh(20, lhB) },
-    { label: 'Body M', size: 18, style: 'Regular', lh: lh(18, lhB) },
-    { label: 'Body S', size: 16, style: 'Regular', lh: lh(16, lhB) },
+    { label: 'Body L', size: 20, style: 'Regular', lh: lhBodyBase },
+    { label: 'Body M', size: 18, style: 'Regular', lh: lh(18, 20, lhBodyBase) },
+    { label: 'Body S', size: 16, style: 'Regular', lh: lh(16, 20, lhBodyBase) },
   ]);
   await addSection('Buttons & Labels', [
-    { label: 'Button',  size: 16, style: 'SemiBold', lh: lh(16, 1.25) },
-    { label: 'Label',   size: 16, style: 'Medium',   lh: lh(16, 1.5)  },
-    { label: 'Caption', size: 12, style: 'Regular',  lh: lh(12, 1.5)  },
+    { label: 'Button',  size: 16, style: 'SemiBold', lh: lh(16, 20, lhBodyBase) },
+    { label: 'Label',   size: 16, style: 'Medium',   lh: lh(16, 20, lhBodyBase) },
+    { label: 'Caption', size: 12, style: 'Regular',  lh: lh(12, 20, lhBodyBase) },
   ]);
 
   f.appendChild(content);
@@ -524,28 +530,67 @@ async function buildSpacing(d, primary, ff) {
   const f = af({ name: 'Spacing', w: 1920, mode: 'VERTICAL', bg: '#FFFFFF' });
   await mkHeader(f, 'Spacing', primary, d, ff);
 
-  const content = af({ name: 'Content', w: 1920, mode: 'VERTICAL', gap: 0, pl: 80, pr: 80, pt: 64, pb: 80 });
+  const content = af({ name: 'Content', w: 1920, mode: 'VERTICAL', gap: 56, pl: 80, pr: 80, pt: 64, pb: 80 });
   content.fills = [];
 
-  content.appendChild(await mkT({ text: 'Escala de Espaçamento', size: 30, style: 'Bold', w: 1760 }));
-  content.appendChild(sp(24, 1760));
+  content.appendChild(await mkT({ text: 'Spacing', size: 30, style: 'Bold', w: 1760 }));
+  content.appendChild(sp(8, 1760));
 
-  const spacings = [4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80, 96, 120, 160, 200, 240];
-  for (const s of spacings) {
-    const row = af({ name: `${s}px`, mode: 'HORIZONTAL', gap: 20 });
-    row.fills = []; row.counterAxisAlignItems = 'CENTER';
+  const spacings = [4, 8, 12, 16, 20, 24, 28, 32, 40, 48, 56, 64, 72, 80, 96, 112, 120, 128, 140];
+  const half = Math.ceil(spacings.length / 2); // split into 2 columns
 
-    const lbl = await mkT({ text: String(s), size: 13, color: '#999999', w: 48, align: 'RIGHT' });
-    row.appendChild(lbl);
+  // 2-column grid
+  const grid = af({ name: 'Spacing Grid', mode: 'HORIZONTAL', gap: 120 });
+  grid.fills = [];
 
-    const bar = mkR(Math.min(s * 4.5, 1400), 28, primary, 4);
-    bar.opacity = 0.85;
-    row.appendChild(bar);
+  for (var col = 0; col < 2; col++) {
+    const column = af({ name: 'Column ' + (col + 1), mode: 'VERTICAL', gap: 0 });
+    column.fills = [];
 
-    row.appendChild(await mkT({ text: `${s}px`, size: 13, color: '#666666' }));
-    content.appendChild(row);
-    content.appendChild(sp(12, 1760));
+    var start = col * half;
+    var end = Math.min(start + half, spacings.length);
+
+    for (var si = start; si < end; si++) {
+      var s = spacings[si];
+      var num = si < 9 ? '0' + (si + 1) : String(si + 1);
+      var boxSize = Math.min(Math.round(s * 0.65), 100);
+      if (boxSize < 4) boxSize = 4;
+
+      const row = af({ name: 'Spacing ' + num, mode: 'HORIZONTAL', gap: 0, pt: 14, pb: 14 });
+      row.fills = []; row.counterAxisAlignItems = 'CENTER';
+      row.primaryAxisAlignItems = 'SPACE_BETWEEN';
+
+      const label = await mkT({ text: 'Spacing ' + num + ': ' + s + 'px', size: 15, color: '#333333', w: 260 });
+      row.appendChild(label);
+
+      const box = mkR(boxSize, boxSize, '#CCCCCC', 2);
+      row.appendChild(box);
+
+      column.appendChild(row);
+      column.appendChild(mkR(600, 1, '#F0F0F0')); // separator
+    }
+    grid.appendChild(column);
   }
+  content.appendChild(grid);
+
+  // Spacing Design Notes
+  content.appendChild(divider(1760));
+
+  const notesSection = af({ name: 'Notes', mode: 'VERTICAL', gap: 12, pt: 0 });
+  notesSection.fills = [];
+  notesSection.appendChild(await mkT({ text: 'Spacing Design Notes', size: 22, style: 'Bold', w: 1760 }));
+  notesSection.appendChild(sp(4, 1760));
+
+  var notes = [
+    'Recommended Gutter: 20px',
+    'Recommended Padding at the Top and Bottom of Each Section: 120px',
+    'Recommended Padding at the Top and Bottom for Smaller Sections: 96px',
+    '**For spacing between elements we can use the graph above. Very important to only use even numbers. NO ODD NUMBERS.',
+  ];
+  for (var ni = 0; ni < notes.length; ni++) {
+    notesSection.appendChild(await mkT({ text: notes[ni], size: 15, color: '#555555', w: 1760, lh: 24 }));
+  }
+  content.appendChild(notesSection);
 
   f.appendChild(content);
   return f;

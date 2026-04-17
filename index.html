@@ -725,18 +725,17 @@
             <input type="text" id="font-sample" value="The quick brown fox jumps over the lazy dog" oninput="updateTypographyPreview()">
           </div>
           <div class="field">
-            <label>Line Height — Títulos <span id="lh-head-val" class="lh-val">1.20×</span></label>
-            <div class="lh-row">
-              <input type="range" id="lh-head" class="lh-range" min="1.0" max="2.0" step="0.05" value="1.2" oninput="updateLineHeight()">
+            <div class="lh-row" style="gap:16px;">
+              <div style="flex:1;">
+                <label>LH — Títulos <span style="font-weight:400;color:#aaa;">(px · base H1 52px)</span></label>
+                <input type="number" id="lh-head" min="20" max="200" step="1" value="64" oninput="updateLineHeight()" style="margin-top:6px;">
+              </div>
+              <div style="flex:1;">
+                <label>LH — Corpo <span style="font-weight:400;color:#aaa;">(px · base 20px)</span></label>
+                <input type="number" id="lh-body" min="12" max="100" step="1" value="32" oninput="updateLineHeight()" style="margin-top:6px;">
+              </div>
             </div>
-            <div class="lh-labels"><span>1.0×</span><span>1.5×</span><span>2.0×</span></div>
-          </div>
-          <div class="field">
-            <label>Line Height — Corpo <span id="lh-body-val" class="lh-val">1.60×</span></label>
-            <div class="lh-row">
-              <input type="range" id="lh-body" class="lh-range" min="1.0" max="2.5" step="0.05" value="1.6" oninput="updateLineHeight()">
-            </div>
-            <div class="lh-labels"><span>1.0×</span><span>1.75×</span><span>2.5×</span></div>
+            <div class="lh-labels" style="margin-top:6px;"><span>Valores em px exatos, como no Figma. Os demais tamanhos são calculados proporcionalmente.</span></div>
           </div>
         </div>
         <div class="preview-panel">
@@ -949,7 +948,7 @@
 // ═══════════════════════════════════════════════
 const state = {
   project: { name: '', tagline: '', logo: null, background: null },
-  typography: { font: 'Montserrat', sample: 'The quick brown fox jumps over the lazy dog', lineHeightHead: 1.2, lineHeightBody: 1.6 },
+  typography: { font: 'Montserrat', sample: 'The quick brown fox jumps over the lazy dog', lineHeightHead: 64, lineHeightBody: 32 },
   colors: [
     { name: 'Black',    hex: '#262628' },
     { name: 'White',    hex: '#FFFFFF' },
@@ -1126,28 +1125,27 @@ function updateTypographyPreview() {
 }
 
 function updateLineHeight() {
-  const head = parseFloat(document.getElementById('lh-head').value);
-  const body = parseFloat(document.getElementById('lh-body').value);
+  const head = parseInt(document.getElementById('lh-head').value) || 64;
+  const body = parseInt(document.getElementById('lh-body').value) || 32;
   state.typography.lineHeightHead = head;
   state.typography.lineHeightBody = body;
-  document.getElementById('lh-head-val').textContent = head.toFixed(2) + '×';
-  document.getElementById('lh-body-val').textContent = body.toFixed(2) + '×';
   renderFontWeightGrid();
 }
 
 function renderFontWeightGrid() {
   const font = state.typography.font;
   const sample = state.typography.sample || 'Aa Bb Cc';
-  const lhH = state.typography.lineHeightHead || 1.2;
-  const lhB = state.typography.lineHeightBody || 1.6;
+  const lhH = state.typography.lineHeightHead || 64;
+  const lhB = state.typography.lineHeightBody || 32;
+  // Proportional LH for each heading size (base: H1=52px)
+  const lhFor = (size, baseLH, baseSize) => Math.round(baseLH * size / baseSize);
   const weights = [100,200,300,400,500,600,700,800,900];
   const labels = ['Thin','Extra Light','Light','Regular','Medium','Semi Bold','Bold','Extra Bold','Black'];
   const grid = document.getElementById('font-weight-grid');
   grid.innerHTML = `
     <div style="font-size:11px;color:#999;margin-bottom:8px;padding:6px 8px;background:#f5f6f7;border-radius:6px;">
       <strong style="color:#333;">${font}</strong>
-      &nbsp;·&nbsp;Títulos LH ${(lhH * 100).toFixed(0)}%
-      &nbsp;·&nbsp;Corpo LH ${(lhB * 100).toFixed(0)}%
+      &nbsp;·&nbsp;H1 LH: ${lhH}px &nbsp;·&nbsp; H2: ${lhFor(44,lhH,52)}px &nbsp;·&nbsp; Body: ${lhB}px
     </div>
   ` + weights.map((w,i) => `
     <div class="font-weight-row">
