@@ -17,16 +17,26 @@ figma.showUI(__html__, { width: 400, height: 660, title: 'Style Guide Maker — 
 // ── HELPERS ───────────────────────────────────────
 
 function hexToRGB(hex) {
-  hex = (hex || '#000000').replace('#', '');
-  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  // Strip everything except hex chars
+  hex = String(hex || '').replace(/[^0-9a-fA-F]/g, '');
+  // Expand 3-char shorthand
+  if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+  // Pad or truncate to exactly 6 chars
+  if (hex.length < 6) hex = (hex + '000000').slice(0, 6);
+  if (hex.length > 6) hex = hex.slice(0, 6);
+  var r = parseInt(hex.slice(0, 2), 16) / 255;
+  var g = parseInt(hex.slice(2, 4), 16) / 255;
+  var b = parseInt(hex.slice(4, 6), 16) / 255;
+  // Final safety: if still NaN, return black
   return {
-    r: parseInt(hex.slice(0, 2), 16) / 255,
-    g: parseInt(hex.slice(2, 4), 16) / 255,
-    b: parseInt(hex.slice(4, 6), 16) / 255,
+    r: isNaN(r) ? 0 : r,
+    g: isNaN(g) ? 0 : g,
+    b: isNaN(b) ? 0 : b,
   };
 }
 
 function fill(hex, a) {
+  if (!hex) return [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
   const c = hexToRGB(hex);
   const p = { type: 'SOLID', color: c };
   if (a !== undefined) p.opacity = a;
