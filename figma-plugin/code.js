@@ -515,12 +515,16 @@ async function buildStyles(d, primary, ff) {
 
   // ── Border Radius
   content.appendChild(await mkT({ text: 'Border Radius', size: 30, style: 'Bold', w: 1760 }));
-  const brRow = af({ name: 'BR Row', mode: 'HORIZONTAL', gap: 32 }); brRow.fills = [];
+  const brRow = af({ name: 'BR Row', mode: 'HORIZONTAL', gap: 48 });
+  brRow.fills = [];
+  brRow.layoutAlign = 'STRETCH'; // fill content width
+  brRow.primaryAxisSizingMode = 'FIXED';
   for (const [key, val] of [['S', br.S], ['M', br.M], ['L', br.L]]) {
-    const card = af({ name: `BR ${key}`, mode: 'VERTICAL', gap: 16, pl: 0, pt: 0, bg: null });
+    const card = af({ name: 'BR ' + key, mode: 'VERTICAL', gap: 16, pt: 0, bg: null });
     card.fills = [];
+    card.counterAxisSizingMode = 'AUTO'; // expand to fit children
     card.appendChild(mkR(200, 200, '#F0F2F4', Number(val) || 0, '#E2E8F0', 1));
-    card.appendChild(await mkT({ text: `Radius ${key}  ·  ${val}px`, size: 16, color: '#444444' }));
+    card.appendChild(await mkT({ text: 'Radius ' + key + '  ·  ' + val + 'px', size: 16, color: '#444444' }));
     brRow.appendChild(card);
   }
   content.appendChild(brRow);
@@ -528,12 +532,16 @@ async function buildStyles(d, primary, ff) {
   // ── Stroke
   content.appendChild(divider(1760));
   content.appendChild(await mkT({ text: 'Stroke', size: 30, style: 'Bold', w: 1760 }));
-  const stRow = af({ name: 'Stroke Row', mode: 'HORIZONTAL', gap: 32 }); stRow.fills = [];
+  const stRow = af({ name: 'Stroke Row', mode: 'HORIZONTAL', gap: 48 });
+  stRow.fills = [];
+  stRow.layoutAlign = 'STRETCH';
+  stRow.primaryAxisSizingMode = 'FIXED';
   for (const [key, val] of [['S', st.S], ['M', st.M], ['L', st.L]]) {
-    const card = af({ name: `St ${key}`, mode: 'VERTICAL', gap: 16, pt: 0, bg: null });
+    const card = af({ name: 'St ' + key, mode: 'VERTICAL', gap: 16, pt: 0, bg: null });
     card.fills = [];
+    card.counterAxisSizingMode = 'AUTO';
     card.appendChild(mkR(200, 200, null, 12, '#111111', Number(val) || 1));
-    card.appendChild(await mkT({ text: `Stroke ${key}  ·  ${val}px`, size: 16, color: '#444444' }));
+    card.appendChild(await mkT({ text: 'Stroke ' + key + '  ·  ' + val + 'px', size: 16, color: '#444444' }));
     stRow.appendChild(card);
   }
   content.appendChild(stRow);
@@ -541,13 +549,18 @@ async function buildStyles(d, primary, ff) {
   // ── Drop Shadow
   content.appendChild(divider(1760));
   content.appendChild(await mkT({ text: 'Drop Shadow', size: 30, style: 'Bold', w: 1760 }));
-  const dsRow = af({ name: 'DS Row', mode: 'HORIZONTAL', gap: 48 }); dsRow.fills = [];
+  const dsRow = af({ name: 'DS Row', mode: 'HORIZONTAL', gap: 48 });
+  dsRow.fills = [];
+  dsRow.layoutAlign = 'STRETCH';
+  dsRow.primaryAxisSizingMode = 'FIXED';
   const shadowBox = mkR(200, 200, '#FFFFFF', 16);
   const sc = hexToRGB(ds.color || '#000000');
   shadowBox.effects = [{ type: 'DROP_SHADOW', color: { r: sc.r, g: sc.g, b: sc.b, a: ds.opacity || 0.16 }, offset: { x: ds.x || 0, y: ds.y || 4 }, radius: ds.blur || 16, visible: true, blendMode: 'NORMAL', showShadowBehindNode: false }];
-  const dsInfo = af({ name: 'DS Info', mode: 'VERTICAL', gap: 8, pt: 0, bg: null }); dsInfo.fills = [];
+  const dsInfo = af({ name: 'DS Info', mode: 'VERTICAL', gap: 8, pt: 0, bg: null });
+  dsInfo.fills = [];
+  dsInfo.counterAxisSizingMode = 'AUTO';
   dsInfo.appendChild(shadowBox);
-  dsInfo.appendChild(await mkT({ text: `Drop Shadow\nBlur: ${ds.blur}px   Y: ${ds.y}px   X: ${ds.x}px\nOpacity: ${Math.round((ds.opacity || 0.16) * 100)}%`, size: 16, color: '#444444', lh: 26 }));
+  dsInfo.appendChild(await mkT({ text: 'Drop Shadow\nBlur: ' + ds.blur + 'px   Y: ' + ds.y + 'px   X: ' + (ds.x || 0) + 'px\nOpacity: ' + Math.round((ds.opacity || 0.16) * 100) + '%', size: 16, color: '#444444', lh: 26 }));
   dsRow.appendChild(dsInfo);
   content.appendChild(dsRow);
 
@@ -667,8 +680,10 @@ async function buildColors(d, primary, ff) {
 
   const cols = 4;
   for (let ri = 0; ri < Math.ceil(colors.length / cols); ri++) {
-    const palRow = af({ name: `Palette Row ${ri + 1}`, mode: 'HORIZONTAL', gap: 24 });
+    const palRow = af({ name: 'Palette Row ' + (ri + 1), mode: 'HORIZONTAL', gap: 24 });
     palRow.fills = [];
+    palRow.layoutAlign = 'STRETCH';
+    palRow.primaryAxisSizingMode = 'FIXED';
 
     for (let ci = 0; ci < cols; ci++) {
       const idx = ri * cols + ci;
@@ -691,13 +706,23 @@ async function buildColors(d, primary, ff) {
       // Shades
       const shCont = af({ name: 'Shades', w: 404, mode: 'VERTICAL', gap: 0, pl: 16, pr: 16, pt: 12, pb: 12, bg: '#FFFFFF' });
       for (let si = 0; si < Math.min(shades.length, 10); si++) {
-        const sRow = af({ name: `Shade ${si}`, mode: 'HORIZONTAL', gap: 0, pt: 6, pb: 6 });
-        sRow.fills = []; sRow.primaryAxisAlignItems = 'SPACE_BETWEEN'; sRow.counterAxisAlignItems = 'CENTER';
+        const sRow = af({ name: 'Shade ' + si, mode: 'HORIZONTAL', gap: 0, pt: 6, pb: 6 });
+        sRow.fills = [];
+        sRow.layoutAlign = 'STRETCH'; // fill card width (404 - 32 padding = 372)
+        sRow.primaryAxisAlignItems = 'SPACE_BETWEEN';
+        sRow.counterAxisAlignItems = 'CENTER';
 
-        const swatch = mkR(28, 28, shades[si], 6);
-        sRow.appendChild(swatch);
-        sRow.appendChild(await mkT({ text: shadeLabels[si] || '', size: 12, color: '#555555' }));
-        sRow.appendChild(await mkT({ text: (shades[si] || '').toUpperCase(), size: 12, color: '#AAAAAA', align: 'RIGHT' }));
+        // Left side: swatch + label name together
+        const swatchLabel = af({ name: 'SwatchLabel', mode: 'HORIZONTAL', gap: 8 });
+        swatchLabel.fills = []; swatchLabel.counterAxisAlignItems = 'CENTER';
+        swatchLabel.appendChild(mkR(28, 28, shades[si], 6));
+        swatchLabel.appendChild(await mkT({ text: shadeLabels[si] || '', size: 12, color: '#555555' }));
+
+        // Right side: hex value
+        const hexLabel = await mkT({ text: (shades[si] || '').toUpperCase(), size: 12, color: '#AAAAAA', align: 'RIGHT' });
+
+        sRow.appendChild(swatchLabel);
+        sRow.appendChild(hexLabel);
         shCont.appendChild(sRow);
       }
       card.appendChild(shCont);
